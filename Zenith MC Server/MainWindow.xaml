@@ -7,13 +7,500 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Zenith MC Server">
+    Title="Zenith MC Server - Minecraft Server Launcher">
 
     <Window.SystemBackdrop>
-        <MicaBackdrop />
+        <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <!-- Top Header Bar -->
+        <Border Grid.Row="0" Background="#1A0F0F1A" Padding="16,12" BorderThickness="0,0,0,1" BorderBrush="#33FFFFFF">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <Border Background="#7C3AED" CornerRadius="8" Width="36" Height="36">
+                        <TextBlock Text="Z" Foreground="White" FontWeight="Bold" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="16" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Launcher de Servidores de Minecraft" FontSize="11" Foreground="#AAAAAA"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Background="#25103020" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#4000FF66">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
+                            <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="12" Foreground="#DDDDDD" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Navigation View -->
+        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Play"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Descargas e Instalación" Tag="Downloads">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Download"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Configuración Visual" Tag="Config">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Explorador de Archivos" Tag="FileManager">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Folder"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <!-- Main Content Area -->
+            <Grid Padding="20">
+
+                <!-- 1. DASHBOARD / CONSOLE VIEW -->
+                <Grid x:Name="ViewDashboard" Visibility="Visible">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Control Panel Header Cards -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card 1: Start/Stop Controls -->
+                        <Border Grid.Column="0" Background="#2212121F" CornerRadius="12" Padding="16" Margin="0,0,8,0" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Acciones del Servidor" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Name="BtnStartServer" Content="Iniciar Servidor" Click="BtnStartServer_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="12,6"/>
+                                    <Button x:Name="BtnStopServer" Content="Detener" Click="BtnStopServer_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="12,6" IsEnabled="False"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Server Info -->
+                        <Border Grid.Column="1" Background="#2212121F" CornerRadius="12" Padding="16" Margin="4,0,4,0" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Información Activa" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                                <TextBlock x:Name="TxtActiveSoftware" Text="JAR: paper-1.20.4.jar" FontSize="12" Foreground="#DDDDDD"/>
+                                <TextBlock x:Name="TxtActivePort" Text="Puerto: 25565" FontSize="12" Foreground="#DDDDDD"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Memory RAM -->
+                        <Border Grid.Column="2" Background="#2212121F" CornerRadius="12" Padding="16" Margin="8,0,0,0" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Asignación de Memoria" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="RAM:" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="CmbRamAllocation" SelectedIndex="1" Width="100">
+                                        <ComboBoxItem Content="2 GB"/>
+                                        <ComboBoxItem Content="4 GB"/>
+                                        <ComboBoxItem Content="8 GB"/>
+                                        <ComboBoxItem Content="16 GB"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Console Terminal Output -->
+                    <Border Grid.Row="1" Background="#150A0A12" CornerRadius="12" Padding="12" BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <ScrollViewer x:Name="ConsoleScrollViewer" VerticalScrollBarVisibility="Auto">
+                            <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8" BorderThickness="0"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Command Input -->
+                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtConsoleInput" Grid.Column="0" PlaceholderText="Ingresa un comando (ej: op Steve, stop, say Hola)..." KeyDown="TxtConsoleInput_KeyDown" CornerRadius="6" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnSendCommand" Grid.Column="1" Content="Enviar" Click="BtnSendCommand_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" Padding="16,6"/>
+                    </Grid>
+                </Grid>
+
+                <!-- 2. DOWNLOADS & INSTALLATION VIEW -->
+                <Grid x:Name="ViewDownloads" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="Instalador y Descargas de Componentes Esenciales" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+                            <!-- Section 1: Java Runtimes -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="1. Entornos de Ejecución Java (JRE / JDK)" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                    <TextBlock Text="Selecciona e instala la versión de Java adecuada para la versión de Minecraft que deseas ejecutar." FontSize="12" Foreground="#BBBBBB"/>
+
+                                    <StackPanel x:Name="ListJavaItems" Spacing="10">
+                                        <!-- Java 21 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Java 21 (Temurin JDK)" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Recomendado para Minecraft 1.20.5+" FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Descargar e Instalar Java 21" Click="BtnDownloadJava21_Click" Background="#7C3AED" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Java 17 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Java 17 (Temurin JDK)" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Recomendado para Minecraft 1.17 - 1.20.4" FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Descargar e Instalar Java 17" Click="BtnDownloadJava17_Click" Background="#7C3AED" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Java 8 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="Java 8 (Temurin JDK)" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Recomendado para Minecraft 1.12.2 y servidores legados" FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Descargar e Instalar Java 8" Click="BtnDownloadJava8_Click" Background="#7C3AED" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Section 2: Server Jars -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="2. Núcleos de Servidor (Server JARs)" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                    <TextBlock Text="Descarga e instala Paper, Spigot, Purpur o el servidor Oficial Vanilla directamente a tu directorio de servidor." FontSize="12" Foreground="#BBBBBB"/>
+
+                                    <StackPanel x:Name="ListServerJars" Spacing="10">
+                                        <!-- Paper 1.20.4 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="Paper MC 1.20.4 (Recomendado)" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Alto rendimiento, optimización de lag y soporte total de plugins Bukkit/Spigot." FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Instalar Paper 1.20.4" Click="BtnInstallPaper_Click" Background="#059669" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Purpur 1.20.4 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="Purpur MC 1.20.4" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Fork de Paper con características avanzadas de personalización de mobs y jugabilidad." FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Instalar Purpur 1.20.4" Click="BtnInstallPurpur_Click" Background="#059669" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Vanilla 1.20.4 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="Mojang Vanilla Server 1.20.4" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Servidor oficial puro de Mojang sin plugins ni modificaciones." FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Instalar Vanilla 1.20.4" Click="BtnInstallVanilla_Click" Background="#059669" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Spigot 1.20.4 -->
+                                        <Border Background="#1A1825" Padding="12" CornerRadius="8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="Spigot MC 1.20.4" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="Servidor clásico con compatibilidad para la API de Spigot." FontSize="11" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Instalar Spigot 1.20.4" Click="BtnInstallSpigot_Click" Background="#059669" Foreground="White" CornerRadius="6"/>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Download Progress Info -->
+                                    <ProgressBar x:Name="DownloadProgressBar" Value="0" Maximum="100" Height="8" Visibility="Collapsed" Margin="0,8,0,0"/>
+                                    <TextBlock x:Name="TxtDownloadStatus" Text="" FontSize="12" Foreground="#38BDF8"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 3. GUI CONFIGURATOR VIEW -->
+                <Grid x:Name="ViewConfig" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+                        <TextBlock Text="Configuración Total del Servidor (Sin Código)" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Ajusta todas las opciones de server.properties y licencias de forma totalmente visual e intuitiva." FontSize="12" Foreground="#BBBBBB"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+
+                            <!-- Card: Licencia EULA -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Aceptar EULA de Minecraft (eula.txt)" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
+                                        <TextBlock Text="Requerido para que el servidor inicie correctamente." FontSize="12" Foreground="#AAAAAA"/>
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="ToggleEula" Grid.Column="1" OffContent="No Aceptado" OnContent="Aceptado (eula=true)" Toggled="ToggleEula_Toggled"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Card: Ajustes Generales -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="1. Ajustes Generales y Mensaje" FontWeight="SemiBold" FontSize="15" Foreground="#A78BFA"/>
+                                    <Grid RowSpacing="12" ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Mensaje del Día (MOTD)" FontSize="12"/>
+                                            <TextBox x:Name="CfgMotd" Text="A Minecraft Server"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="Jugadores Máximos" FontSize="12"/>
+                                            <TextBox x:Name="CfgMaxPlayers" Text="20"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Modo de Juego (Gamemode)" FontSize="12"/>
+                                            <ComboBox x:Name="CfgGamemode" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                                <ComboBoxItem Content="survival"/>
+                                                <ComboBoxItem Content="creative"/>
+                                                <ComboBoxItem Content="adventure"/>
+                                                <ComboBoxItem Content="spectator"/>
+                                            </ComboBox>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="Dificultad" FontSize="12"/>
+                                            <ComboBox x:Name="CfgDifficulty" HorizontalAlignment="Stretch" SelectedIndex="1">
+                                                <ComboBoxItem Content="peaceful"/>
+                                                <ComboBoxItem Content="easy"/>
+                                                <ComboBoxItem Content="normal"/>
+                                                <ComboBoxItem Content="hard"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card: Red y Seguridad -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="2. Red, Seguridad y Licencias" FontWeight="SemiBold" FontSize="15" Foreground="#A78BFA"/>
+                                    <Grid RowSpacing="12" ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Puerto del Servidor" FontSize="12"/>
+                                            <TextBox x:Name="CfgServerPort" Text="25565"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="CfgOnlineMode" Header="Modo Online (Cuentas Premium)" OffContent="No (No Premium)" OnContent="Sí (Verificar Mojang)"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="CfgPvp" Header="Permitir PVP" OffContent="Desactivado" OnContent="Activado"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="CfgWhitelist" Header="Lista Blanca (Whitelist)" OffContent="Desactivada" OnContent="Activada"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card: Rendimiento y Mundo -->
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="3. Rendimiento y Mundo" FontWeight="SemiBold" FontSize="15" Foreground="#A78BFA"/>
+                                    <Grid RowSpacing="12" ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Distancia de Visión (View Distance)" FontSize="12"/>
+                                            <TextBox x:Name="CfgViewDistance" Text="10"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="Distancia de Simulación" FontSize="12"/>
+                                            <TextBox x:Name="CfgSimulationDistance" Text="10"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="CfgCommandBlocks" Header="Bloques de Comandos" OffContent="Desactivados" OnContent="Activados"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Center">
+                                            <ToggleSwitch x:Name="CfgAllowNether" Header="Permitir Nether" OffContent="No" OnContent="Sí"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,12,0,0">
+                        <Button Content="Recargar Propiedades" Click="BtnReloadConfig_Click" CornerRadius="6" Padding="16,8"/>
+                        <Button Content="Guardar Configuración Visual" Click="BtnSaveConfig_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="16,8"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 4. FILE MANAGER & CODE EDITOR VIEW -->
+                <Grid x:Name="ViewFileManager" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- File Browser Sidebar -->
+                    <Border Grid.Column="0" Background="#1C1422" CornerRadius="12" Padding="12" Margin="0,0,12,0" BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,8">
+                                <TextBlock Text="Archivos del Servidor" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
+                                <Button Content="↻ Actualizar Lista" Click="BtnRefreshFiles_Click" HorizontalAlignment="Stretch" CornerRadius="6"/>
+                            </StackPanel>
+
+                            <ListView Grid.Row="1" x:Name="LstFileItems" SelectionChanged="LstFileItems_SelectionChanged" DisplayMemberPath="Name"/>
+
+                            <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,0">
+                                <Button Content="+ Nuevo Archivo" Click="BtnNewFile_Click" HorizontalAlignment="Stretch" CornerRadius="6"/>
+                                <Button Content="Eliminar Seleccionado" Click="BtnDeleteFile_Click" Background="#441111" Foreground="#FF8888" HorizontalAlignment="Stretch" CornerRadius="6"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Integrated Text/Code Editor -->
+                    <Border Grid.Column="1" Background="#150A0A12" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <SymbolIcon Symbol="Document"/>
+                                    <TextBlock x:Name="TxtEditingFileName" Text="Ningún archivo seleccionado" FontWeight="SemiBold" FontSize="14" Foreground="#38BDF8"/>
+                                </StackPanel>
+
+                                <Button Grid.Column="1" x:Name="BtnSaveFileContent" Content="Guardar Cambios en Archivo" Click="BtnSaveFileContent_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="6"/>
+                            </Grid>
+
+                            <TextBox Grid.Row="1" x:Name="TxtCodeEditor" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas, Courier New" FontSize="13" Background="#120D18" Foreground="#E2E8F0" BorderThickness="1" BorderBrush="#33FFFFFF"/>
+
+                            <TextBlock Grid.Row="2" x:Name="TxtFileEditorStatus" Text="Selecciona un archivo para editar su contenido directamente desde el launcher." FontSize="11" Foreground="#AAAAAA" Margin="0,8,0,0"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+            </Grid>
+        </NavigationView>
     </Grid>
 </Window>
