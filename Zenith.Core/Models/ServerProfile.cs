@@ -13,6 +13,9 @@ namespace Zenith.Core.Models
         public int AllocatedRamGb { get; set; } = 4;
         public string CustomJvmArgs { get; set; } = "";
         public string JavaExecutablePath { get; set; } = "";
+        public string ExternalEditorPath { get; set; } = "";
+        public string ActiveTheme { get; set; } = "Dark";
+        public string BackdropType { get; set; } = "AcrylicThin";
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

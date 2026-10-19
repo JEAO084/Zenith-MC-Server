@@ -20,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <!-- Custom Integrated Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Height="48" Padding="16,0">
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#150B0B18" Height="48" Padding="16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -34,7 +34,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher Servers For Minecraft" FontSize="8" Foreground="#A0A0A0"/>
+                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Thin Edition)" FontSize="10" Foreground="#A0A0A0"/>
                 </StackPanel>
             </StackPanel>
 
@@ -57,7 +57,7 @@
         </Grid>
 
         <!-- Main Navigation View -->
-        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="LeftCompact" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
+        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
                     <NavigationViewItem.Icon>
@@ -71,9 +71,15 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
-                <NavigationViewItem Content="Configuración Visual" Tag="Config">
+                <NavigationViewItem Content="Configuración del Servidor" Tag="Config">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Setting"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Content="Plugins y Mods" Tag="PluginsMods">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="AllApps"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
@@ -112,13 +118,12 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Card 1: Start/Stop Controls -->
                         <Border Grid.Column="0" Background="#2212121F" CornerRadius="12" Padding="16" Margin="0,0,8,0" BorderBrush="#33FFFFFF" BorderThickness="1">
                             <StackPanel Spacing="10">
-                                <TextBlock Text="Control del Servidor" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                                <TextBlock Text="Control de Ejecución" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button x:Name="BtnStartServer" Content="Iniciar Servidor" Click="BtnStartServer_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="12,6"/>
                                     <Button x:Name="BtnStopServer" Content="Detener" Click="BtnStopServer_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="12,6" IsEnabled="False"/>
@@ -126,52 +131,42 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Card 2: Server Info -->
-                        <Border Grid.Column="1" Background="#2212121F" CornerRadius="12" Padding="16" Margin="4,0,4,0" BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <!-- Card 2: Active Server Summary -->
+                        <Border Grid.Column="1" Background="#2212121F" CornerRadius="12" Padding="16" Margin="8,0,0,0" BorderBrush="#33FFFFFF" BorderThickness="1">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Información Activa" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                                <TextBlock Text="Información Activa del Servidor" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
                                 <TextBlock x:Name="TxtActiveServerName" Text="Servidor: Servidor Principal" FontSize="12" Foreground="#38BDF8" FontWeight="Bold"/>
                                 <TextBlock x:Name="TxtActiveSoftware" Text="Motor: Paper 1.20.4" FontSize="11" Foreground="#DDDDDD"/>
                                 <TextBlock x:Name="TxtActivePort" Text="Puerto: 25565" FontSize="11" Foreground="#DDDDDD"/>
                             </StackPanel>
                         </Border>
-
-                        <!-- Card 3: Memory RAM -->
-                        <Border Grid.Column="2" Background="#2212121F" CornerRadius="12" Padding="16" Margin="8,0,0,0" BorderBrush="#33FFFFFF" BorderThickness="1">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="Asignación de Memoria RAM" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="RAM:" VerticalAlignment="Center" FontSize="12"/>
-                                    <ComboBox x:Name="CmbRamAllocation" SelectedIndex="1" Width="100" SelectionChanged="CmbRamAllocation_SelectionChanged">
-                                        <ComboBoxItem Content="1 GB"/>
-                                        <ComboBoxItem Content="2 GB"/>
-                                        <ComboBoxItem Content="3 GB"/>
-                                        <ComboBoxItem Content="4 GB"/>
-                                        <ComboBoxItem Content="5 GB"/>
-                                        <ComboBoxItem Content="6 GB"/>
-                                        <ComboBoxItem Content="7 GB"/>
-                                        <ComboBoxItem Content="8 GB"/>
-                                    </ComboBox>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
                     </Grid>
 
                     <!-- Console Terminal Output -->
-                    <Border Grid.Row="1" Background="Transparent">
+                    <Border Grid.Row="1" Background="#150A0A12" CornerRadius="12" Padding="12" BorderBrush="#33FFFFFF" BorderThickness="1">
                         <ScrollViewer x:Name="ConsoleScrollViewer" VerticalScrollBarVisibility="Auto">
-                            <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8"  CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1"/>
+                            <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8" BorderThickness="0"/>
                         </ScrollViewer>
                     </Border>
 
-                    <!-- Command Input -->
+                    <!-- Command Input & Autocomplete Container -->
                     <Grid Grid.Row="2" Margin="0,12,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="TxtConsoleInput" Grid.Column="0" PlaceholderText="Ingresa un comando (ej: op Steve, stop, say Hola)..." KeyDown="TxtConsoleInput_KeyDown" CornerRadius="6" Margin="0,0,8,0"/>
-                        <Button x:Name="BtnSendCommand" Grid.Column="1" Content="Enviar" Click="BtnSendCommand_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" Padding="16,6"/>
+
+                        <!-- Autocomplete Popup Overlay -->
+                        <Border x:Name="CmdSuggestionContainer" Grid.Row="0" Grid.Column="0" Background="#1E1428" BorderBrush="#7C3AED" BorderThickness="1" CornerRadius="6" Margin="0,0,8,4" Visibility="Collapsed" Canvas.ZIndex="100">
+                            <ListView x:Name="LstCmdSuggestions" MaxHeight="120" SelectionChanged="LstCmdSuggestions_SelectionChanged"/>
+                        </Border>
+
+                        <TextBox x:Name="TxtConsoleInput" Grid.Row="1" Grid.Column="0" PlaceholderText="Ingresa un comando (ej: gamemode creative, op, teleport)..." TextChanged="TxtConsoleInput_TextChanged" KeyDown="TxtConsoleInput_KeyDown" CornerRadius="6" Margin="0,0,8,0"/>
+                        <Button x:Name="BtnSendCommand" Grid.Row="1" Grid.Column="1" Content="Enviar" Click="BtnSendCommand_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" Padding="16,6"/>
                     </Grid>
                 </Grid>
 
@@ -181,7 +176,6 @@
                         <StackPanel Spacing="20">
                             <TextBlock Text="Asistente de Creación de Servidor por Partes" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
 
-                            <!-- Step Navigation Header -->
                             <Grid Background="#1D122A" Padding="16" CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -219,10 +213,7 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Wizard Form Cards -->
                             <StackPanel Spacing="16">
-
-                                <!-- Part 1: Name, Icon & Version -->
                                 <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="Parte 1: Nombre, Logo e Identidad del Servidor" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -264,7 +255,6 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Part 2: Loader Engine Selection -->
                                 <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -280,7 +270,6 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Part 3: Strict Java Mapping -->
                                 <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="Parte 3: Verificación y Requisito Estricto de Java" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -294,7 +283,6 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Part 4: RAM, Aikar's Flags & Finalize -->
                                 <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="Parte 4: Asignación de Memoria, Flags Aikar y Puerto" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -337,7 +325,7 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- 3. GUI CONFIGURATOR VIEW -->
+                <!-- 3. SERVER SETTINGS VIEW (CONFIGURACIÓN DEL SERVIDOR) -->
                 <Grid x:Name="ViewConfig" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -346,12 +334,55 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
-                        <TextBlock Text="Configuración Visual Total del Servidor" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <TextBlock Text="Ajusta server.properties, eula.txt, spigot.yml y paper.yml mediante interfaz gráfica." FontSize="12" Foreground="#BBBBBB"/>
+                        <TextBlock Text="Configuración Total del Servidor Activo" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Ajustes de Hardware, RAM, Parámetros JVM, server.properties completo, eula.txt, spigot.yml y paper.yml." FontSize="12" Foreground="#BBBBBB"/>
                     </StackPanel>
 
                     <Pivot Grid.Row="1">
-                        <PivotItem Header="server.properties">
+                        <!-- Tab 1: Hardware & Execution Settings -->
+                        <PivotItem Header="Hardware y Ejecución">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="16" Margin="0,12,0,0">
+                                    <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="Ajustes de Rendimiento y Memoria RAM" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                            <Grid ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Spacing="4">
+                                                    <TextBlock Text="Asignación de Memoria RAM" FontSize="12"/>
+                                                    <ComboBox x:Name="CmbRamAllocation" SelectedIndex="1" HorizontalAlignment="Stretch" SelectionChanged="CmbRamAllocation_SelectionChanged">
+                                                        <ComboBoxItem Content="2 GB"/>
+                                                        <ComboBoxItem Content="4 GB"/>
+                                                        <ComboBoxItem Content="8 GB"/>
+                                                        <ComboBoxItem Content="16 GB"/>
+                                                        <ComboBoxItem Content="24 GB"/>
+                                                        <ComboBoxItem Content="32 GB"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Spacing="4">
+                                                    <TextBlock Text="Ruta Ejecutable de Java Customizada" FontSize="12"/>
+                                                    <TextBox x:Name="TxtServerCustomJavaExe" PlaceholderText="Ej: C:\Program Files\Java\jdk-21\bin\java.exe"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="Argumentos Personalizados de la Máquina Virtual (JVM)" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                            <TextBox x:Name="TxtCustomJvmArgs" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas" Height="80"/>
+                                            <Button Content="Cargar Banderas de Optimización de Aikar" Click="BtnApplyAikarsFlags_Click" CornerRadius="6" HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </PivotItem>
+
+                        <!-- Tab 2: Extended server.properties -->
+                        <PivotItem Header="server.properties Completo">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="16" Margin="0,12,0,0">
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
@@ -370,7 +401,7 @@
 
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                         <StackPanel Spacing="12">
-                                            <TextBlock Text="Ajustes de Juego y Red" FontWeight="SemiBold" FontSize="15" Foreground="#A78BFA"/>
+                                            <TextBlock Text="Propiedades Básicas y Red" FontSize="15" FontWeight="SemiBold" Foreground="#A78BFA"/>
                                             <Grid RowSpacing="12" ColumnSpacing="16">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -423,10 +454,66 @@
                                             </Grid>
                                         </StackPanel>
                                     </Border>
+
+                                    <!-- Extended Advanced Server Properties Section -->
+                                    <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                        <StackPanel Spacing="12">
+                                            <TextBlock Text="Propiedades Avanzadas y de Rendimiento" FontSize="15" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                            <Grid RowSpacing="12" ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                                    <TextBlock Text="Distancia de Visión (View Distance)" FontSize="12"/>
+                                                    <TextBox x:Name="CfgViewDistance" Text="10"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                                    <TextBlock Text="Distancia de Simulación" FontSize="12"/>
+                                                    <TextBox x:Name="CfgSimulationDistance" Text="10"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                                                    <TextBlock Text="Semilla del Mundo (Seed)" FontSize="12"/>
+                                                    <TextBox x:Name="CfgLevelSeed" Text=""/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                                    <TextBlock Text="Protección de Spawn (bloques)" FontSize="12"/>
+                                                    <TextBox x:Name="CfgSpawnProtection" Text="16"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">
+                                                    <ToggleSwitch x:Name="CfgPvp" Header="Permitir PVP entre jugadores" OffContent="No" OnContent="Sí"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+                                                    <ToggleSwitch x:Name="CfgAllowFlight" Header="Permitir Vuelo (Allow Flight)" OffContent="No" OnContent="Sí"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">
+                                                    <ToggleSwitch x:Name="CfgCommandBlocks" Header="Habilitar Command Blocks" OffContent="No" OnContent="Sí"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Row="3" Grid.Column="1" VerticalAlignment="Center">
+                                                    <ToggleSwitch x:Name="CfgHardcore" Header="Modo Hardcore" OffContent="No" OnContent="Sí"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </ScrollViewer>
                         </PivotItem>
 
+                        <!-- Tab 3: paper-global.yml -->
                         <PivotItem Header="paper-global.yml">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
@@ -438,6 +525,7 @@
                             </Grid>
                         </PivotItem>
 
+                        <!-- Tab 4: spigot.yml -->
                         <PivotItem Header="spigot.yml">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
@@ -452,11 +540,92 @@
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,12,0,0">
                         <Button Content="Recargar Propiedades" Click="BtnReloadConfig_Click" CornerRadius="6" Padding="16,8"/>
-                        <Button Content="Guardar server.properties" Click="BtnSaveConfig_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="16,8"/>
+                        <Button Content="Guardar Todos los Ajustes" Click="BtnSaveConfig_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="16,8"/>
                     </StackPanel>
                 </Grid>
 
-                <!-- 4. FILE MANAGER & CODE EDITOR VIEW -->
+                <!-- 4. PLUGINS & MODS VIEW -->
+                <Grid x:Name="ViewPluginsMods" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+                        <TextBlock x:Name="TxtPluginsModsTitle" Text="Gestión de Plugins y Complementos" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Arrastra archivos .jar o carpetas para instalarlos automáticamente. Activa o desactiva elementos sin eliminarlos." FontSize="12" Foreground="#BBBBBB"/>
+                    </StackPanel>
+
+                    <!-- Main Plugin/Mod Grid -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="380"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Drag and Drop Overlay Zone & List -->
+                        <Border Grid.Column="0" x:Name="DropZoneBorder" Background="#1C1422" CornerRadius="12" Padding="16" Margin="0,0,12,0" BorderBrush="#7C3AED" BorderThickness="2" AllowDrop="True" DragOver="DropZoneBorder_DragOver" Drop="DropZoneBorder_Drop">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="SpaceBetween" Margin="0,0,0,12">
+                                    <TextBlock Text="Archivos Detectados (.jar)" FontWeight="Bold" FontSize="14"/>
+                                    <Button Content="↻ Refrescar" Click="BtnRefreshPlugins_Click" CornerRadius="6"/>
+                                </StackPanel>
+
+                                <ListView Grid.Row="1" x:Name="LstPluginModItems" SelectionChanged="LstPluginModItems_SelectionChanged">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Padding="6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" Click="ChkTogglePlugin_Click" Tag="{Binding}" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="8,0">
+                                                    <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="13" Foreground="#FFFFFF"/>
+                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="#888888"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Content="🗑️" Tag="{Binding}" Click="BtnDeletePluginItem_Click" Background="Transparent" Foreground="#EF4444"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+
+                                <Border Grid.Row="2" Background="#281A38" Padding="12" CornerRadius="8" Margin="0,12,0,0">
+                                    <TextBlock Text="💡 Arrastra aquí archivos .jar o carpetas completas para importarlas." FontSize="11" Foreground="#A78BFA" HorizontalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Config Editor Sub-View -->
+                        <Border Grid.Column="1" Background="#150A0A12" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                                    <TextBlock Text="Visor de Configuración" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
+                                    <Button x:Name="BtnOpenExternalEditor" Content="📄 Abrir con Editor Externo" Click="BtnOpenExternalEditor_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+
+                                <TextBox Grid.Row="1" x:Name="TxtPluginConfigViewer" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas" FontSize="12" Background="#120D18" Foreground="#E2E8F0"/>
+
+                                <TextBlock Grid.Row="2" x:Name="TxtPluginStatus" Text="Selecciona un plugin o mod para ver su estado." FontSize="11" Foreground="#AAAAAA" Margin="0,8,0,0"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- 5. FILE MANAGER & CODE EDITOR VIEW -->
                 <Grid x:Name="ViewFileManager" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="280"/>
@@ -514,7 +683,7 @@
                     </Border>
                 </Grid>
 
-                <!-- 5. JAVA RUNTIMES MANAGER VIEW -->
+                <!-- 6. JAVA RUNTIMES MANAGER VIEW -->
                 <Grid x:Name="ViewJavaRuntimes" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="16">
@@ -552,11 +721,29 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- 6. LAUNCHER GLOBAL SETTINGS VIEW -->
+                <!-- 7. LAUNCHER GLOBAL SETTINGS VIEW -->
                 <Grid x:Name="ViewLauncherSettings" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="16">
-                            <TextBlock Text="Ajustes Globales del Launcher Zenith" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Ajustes Globales y Personalización del Launcher Zenith" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Personalización del Editor y Aplicación" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Ruta del Editor de Texto Externo Customizado" FontSize="12"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="TxtExternalEditorExecutablePath" PlaceholderText="Ej: C:\Program Files\Notepad++\notepad++.exe"/>
+                                            <Button Grid.Column="1" Content="Guardar Editor" Click="BtnSaveExternalEditor_Click" CornerRadius="6"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
 
                             <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <StackPanel Spacing="12">

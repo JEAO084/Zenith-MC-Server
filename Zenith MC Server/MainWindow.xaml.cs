@@ -4,9 +4,11 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
@@ -21,10 +23,19 @@ namespace Zenith_MC_Server
         private readonly ServerConfigService _configService;
         private readonly FileManagerService _fileManager;
         private readonly ServerProcessManager _processManager;
+        private readonly PluginModManagerService _pluginModManager;
 
         private ServerPropertiesConfig _currentProperties;
         private ServerFileItem? _selectedFileItem;
+        private PluginModItem? _selectedPluginModItem;
         private List<MinecraftVersionInfo> _wizardMojangVersions = new();
+
+        private readonly List<string> _knownMinecraftCommands = new()
+        {
+            "gamemode survival", "gamemode creative", "gamemode adventure", "gamemode spectator",
+            "gamerule doDaylightCycle false", "gamerule doMobSpawning false", "gamerule keepInventory true",
+            "op", "deop", "teleport", "tp", "give", "kick", "ban", "pardon", "stop", "reload", "save-all", "whitelist add", "whitelist remove", "list", "say"
+        };
 
         public MainWindow()
         {
@@ -34,6 +45,7 @@ namespace Zenith_MC_Server
             _configService = new ServerConfigService();
             _fileManager = new FileManagerService();
             _processManager = new ServerProcessManager();
+            _pluginModManager = new PluginModManagerService();
             _currentProperties = new ServerPropertiesConfig();
 
             this.InitializeComponent();
@@ -276,6 +288,7 @@ namespace Zenith_MC_Server
             LoadConfigurationToUI();
             RefreshFileList();
             LoadEngineConfigs();
+            RefreshPluginsModsList();
         }
 
         #endregion
@@ -287,6 +300,7 @@ namespace Zenith_MC_Server
             ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
             ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
             ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
+            ViewPluginsMods.Visibility = tag == "PluginsMods" ? Visibility.Visible : Visibility.Collapsed;
             ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
             ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
             ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
@@ -303,6 +317,10 @@ namespace Zenith_MC_Server
                 {
                     LoadConfigurationToUI();
                     LoadEngineConfigs();
+                }
+                else if (tag == "PluginsMods")
+                {
+                    RefreshPluginsModsList();
                 }
                 else if (tag == "FileManager")
                 {
@@ -360,7 +378,7 @@ namespace Zenith_MC_Server
 
                 if (!_configService.CheckEulaAccepted(serverDir))
                 {
-                    AppendConsoleLog("[Zenith] ADVERTENCIA: El archivo eula.txt no ha sido aceptado. Ve a 'Configuración Visual' para activar eula=true.");
+                    AppendConsoleLog("[Zenith] ADVERTENCIA: El archivo eula.txt no ha sido aceptado. Ve a 'Configuración del Servidor' para activar eula=true.");
                 }
 
                 int ramGb = profile.AllocatedRamGb;
@@ -413,11 +431,47 @@ namespace Zenith_MC_Server
             SendConsoleInput();
         }
 
+        private void TxtConsoleInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string query = TxtConsoleInput.Text.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var matches = _knownMinecraftCommands.Where(c => c.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (matches.Count > 0)
+            {
+                LstCmdSuggestions.ItemsSource = matches;
+                CmdSuggestionContainer.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LstCmdSuggestions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstCmdSuggestions.SelectedItem is string selectedCmd)
+            {
+                TxtConsoleInput.Text = selectedCmd;
+                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void TxtConsoleInput_KeyDown(object sender, KeyRoutedEventArgs e)
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
                 SendConsoleInput();
+            }
+            else if (e.Key == Windows.System.VirtualKey.Tab && LstCmdSuggestions.Items.Count > 0)
+            {
+                TxtConsoleInput.Text = LstCmdSuggestions.Items[0].ToString() ?? "";
+                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                e.Handled = true;
             }
         }
 
@@ -428,6 +482,7 @@ namespace Zenith_MC_Server
             {
                 _processManager.SendCommand(cmd);
                 TxtConsoleInput.Text = string.Empty;
+                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -462,7 +517,7 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Visual Configuration & Engine Configs
+        #region Visual Configuration & Extended Settings
 
         private void LoadConfigurationToUI()
         {
@@ -476,11 +531,24 @@ namespace Zenith_MC_Server
             CfgMaxPlayers.Text = _currentProperties.GetProperty("max-players", "20");
             CfgServerPort.Text = _currentProperties.GetProperty("server-port", "25565");
 
+            CfgViewDistance.Text = _currentProperties.GetProperty("view-distance", "10");
+            CfgSimulationDistance.Text = _currentProperties.GetProperty("simulation-distance", "10");
+            CfgLevelSeed.Text = _currentProperties.GetProperty("level-seed", "");
+            CfgSpawnProtection.Text = _currentProperties.GetProperty("spawn-protection", "16");
+
             SelectComboByContent(CfgGamemode, _currentProperties.GetProperty("gamemode", "survival"));
             SelectComboByContent(CfgDifficulty, _currentProperties.GetProperty("difficulty", "easy"));
 
             CfgOnlineMode.IsOn = _currentProperties.GetProperty("online-mode", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            CfgPvp.IsOn = _currentProperties.GetProperty("pvp", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            CfgAllowFlight.IsOn = _currentProperties.GetProperty("allow-flight", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+            CfgCommandBlocks.IsOn = _currentProperties.GetProperty("enable-command-block", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            CfgHardcore.IsOn = _currentProperties.GetProperty("hardcore", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+
             ToggleEula.IsOn = _configService.CheckEulaAccepted(profile.DirectoryPath);
+
+            TxtServerCustomJavaExe.Text = profile.JavaExecutablePath;
+            TxtCustomJvmArgs.Text = profile.CustomJvmArgs;
         }
 
         private void LoadEngineConfigs()
@@ -509,6 +577,15 @@ namespace Zenith_MC_Server
             }
         }
 
+        private void BtnApplyAikarsFlags_Click(object sender, RoutedEventArgs e)
+        {
+            if (_serverManager?.ActiveProfile != null && _configService != null)
+            {
+                int ram = _serverManager.ActiveProfile.AllocatedRamGb;
+                TxtCustomJvmArgs.Text = _configService.GetAikarsJvmFlags(ram);
+            }
+        }
+
         private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
         {
             if (_serverManager == null || _configService == null) return;
@@ -518,6 +595,11 @@ namespace Zenith_MC_Server
             _currentProperties.SetProperty("motd", CfgMotd.Text);
             _currentProperties.SetProperty("max-players", CfgMaxPlayers.Text);
             _currentProperties.SetProperty("server-port", CfgServerPort.Text);
+
+            _currentProperties.SetProperty("view-distance", CfgViewDistance.Text);
+            _currentProperties.SetProperty("simulation-distance", CfgSimulationDistance.Text);
+            _currentProperties.SetProperty("level-seed", CfgLevelSeed.Text);
+            _currentProperties.SetProperty("spawn-protection", CfgSpawnProtection.Text);
 
             if (CfgGamemode.SelectedItem is ComboBoxItem gmItem)
             {
@@ -530,6 +612,14 @@ namespace Zenith_MC_Server
             }
 
             _currentProperties.SetProperty("online-mode", CfgOnlineMode.IsOn.ToString().ToLower());
+            _currentProperties.SetProperty("pvp", CfgPvp.IsOn.ToString().ToLower());
+            _currentProperties.SetProperty("allow-flight", CfgAllowFlight.IsOn.ToString().ToLower());
+            _currentProperties.SetProperty("enable-command-block", CfgCommandBlocks.IsOn.ToString().ToLower());
+            _currentProperties.SetProperty("hardcore", CfgHardcore.IsOn.ToString().ToLower());
+
+            profile.JavaExecutablePath = TxtServerCustomJavaExe.Text.Trim();
+            profile.CustomJvmArgs = TxtCustomJvmArgs.Text.Trim();
+            _serverManager.UpdateProfile(profile);
 
             _configService.SaveProperties(profile.DirectoryPath, _currentProperties);
             _configService.SetEulaAccepted(profile.DirectoryPath, ToggleEula.IsOn);
@@ -569,6 +659,106 @@ namespace Zenith_MC_Server
             if (_serverManager != null && _serverManager.ActiveProfile != null && _configService != null)
             {
                 _configService.SetEulaAccepted(_serverManager.ActiveProfile.DirectoryPath, ToggleEula.IsOn);
+            }
+        }
+
+        #endregion
+
+        #region Plugins & Mods Manager
+
+        private bool IsPluginMode()
+        {
+            if (_serverManager?.ActiveProfile == null) return true;
+            string loader = _serverManager.ActiveProfile.SoftwareType.ToLower();
+            return !loader.Contains("fabric") && !loader.Contains("forge");
+        }
+
+        private void RefreshPluginsModsList()
+        {
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
+            bool isPlugin = IsPluginMode();
+            TxtPluginsModsTitle.Text = isPlugin ? "Gestión de Plugins (Spigot / Paper / Purpur)" : "Gestión de Mods (Fabric / Forge)";
+
+            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, isPlugin);
+            LstPluginModItems.ItemsSource = items;
+        }
+
+        private void BtnRefreshPlugins_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshPluginsModsList();
+        }
+
+        private void ChkTogglePlugin_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox chk && chk.Tag is PluginModItem item && _pluginModManager != null)
+            {
+                _pluginModManager.ToggleItem(item.FullPath);
+                RefreshPluginsModsList();
+            }
+        }
+
+        private void BtnDeletePluginItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is PluginModItem item && _pluginModManager != null)
+            {
+                _pluginModManager.DeleteItem(item.FullPath);
+                RefreshPluginsModsList();
+            }
+        }
+
+        private void LstPluginModItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstPluginModItems.SelectedItem is PluginModItem item)
+            {
+                _selectedPluginModItem = item;
+                TxtPluginStatus.Text = $"Archivo: {item.FileName} | Tamaño: {item.FormattedSize}";
+                TxtPluginConfigViewer.Text = $"// Configuración o detalles de {item.FileName}\n// Estado: {(item.IsEnabled ? "ACTIVO" : "DESACTIVADO")}";
+            }
+        }
+
+        private void DropZoneBorder_DragOver(object sender, DragEventArgs e)
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+        }
+
+        private async void DropZoneBorder_Drop(object sender, DragEventArgs e)
+        {
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
+
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                var items = await e.DataView.GetStorageItemsAsync();
+                var paths = items.Select(i => i.Path).ToList();
+
+                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, IsPluginMode());
+                RefreshPluginsModsList();
+                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a {(IsPluginMode() ? "plugins" : "mods")}.");
+            }
+        }
+
+        private void BtnOpenExternalEditor_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedPluginModItem == null) return;
+            string editor = _serverManager?.ActiveProfile?.ExternalEditorPath ?? "";
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(editor) && File.Exists(editor))
+                {
+                    Process.Start(editor, $"\"{_selectedPluginModItem.FullPath}\"");
+                }
+                else
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = _selectedPluginModItem.FullPath,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                TxtPluginStatus.Text = $"Error al abrir editor: {ex.Message}";
             }
         }
 
@@ -697,6 +887,20 @@ namespace Zenith_MC_Server
             if (_javaService != null)
             {
                 TxtCustomJavaPath.Text = _javaService.RuntimesDirectory;
+            }
+            if (_serverManager?.ActiveProfile != null)
+            {
+                TxtExternalEditorExecutablePath.Text = _serverManager.ActiveProfile.ExternalEditorPath;
+            }
+        }
+
+        private void BtnSaveExternalEditor_Click(object sender, RoutedEventArgs e)
+        {
+            if (_serverManager?.ActiveProfile != null)
+            {
+                _serverManager.ActiveProfile.ExternalEditorPath = TxtExternalEditorExecutablePath.Text.Trim();
+                _serverManager.UpdateProfile(_serverManager.ActiveProfile);
+                AppendConsoleLog("[Zenith] Editor de texto externo actualizado.");
             }
         }
 
