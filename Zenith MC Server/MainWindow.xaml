@@ -20,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <!-- Custom Integrated Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#150B0B18" Height="48" Padding="16,0">
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent" Height="48" Padding="16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -34,7 +34,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Thin Edition)" FontSize="10" Foreground="#A0A0A0"/>
+                    <TextBlock Text="Launcher Servers For Minecraft" FontSize="8" Foreground="#A0A0A0"/>
                 </StackPanel>
             </StackPanel>
 
@@ -57,7 +57,7 @@
         </Grid>
 
         <!-- Main Navigation View -->
-        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
+        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="LeftCompact" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
                     <NavigationViewItem.Icon>
@@ -143,12 +143,14 @@
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="RAM:" VerticalAlignment="Center" FontSize="12"/>
                                     <ComboBox x:Name="CmbRamAllocation" SelectedIndex="1" Width="100" SelectionChanged="CmbRamAllocation_SelectionChanged">
+                                        <ComboBoxItem Content="1 GB"/>
                                         <ComboBoxItem Content="2 GB"/>
+                                        <ComboBoxItem Content="3 GB"/>
                                         <ComboBoxItem Content="4 GB"/>
+                                        <ComboBoxItem Content="5 GB"/>
+                                        <ComboBoxItem Content="6 GB"/>
+                                        <ComboBoxItem Content="7 GB"/>
                                         <ComboBoxItem Content="8 GB"/>
-                                        <ComboBoxItem Content="16 GB"/>
-                                        <ComboBoxItem Content="24 GB"/>
-                                        <ComboBoxItem Content="32 GB"/>
                                     </ComboBox>
                                 </StackPanel>
                             </StackPanel>
@@ -156,9 +158,9 @@
                     </Grid>
 
                     <!-- Console Terminal Output -->
-                    <Border Grid.Row="1" Background="#150A0A12" CornerRadius="12" Padding="12" BorderBrush="#33FFFFFF" BorderThickness="1">
+                    <Border Grid.Row="1" Background="Transparent">
                         <ScrollViewer x:Name="ConsoleScrollViewer" VerticalScrollBarVisibility="Auto">
-                            <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8" BorderThickness="0"/>
+                            <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8"  CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1"/>
                         </ScrollViewer>
                     </Border>
 
