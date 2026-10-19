@@ -34,7 +34,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher &amp; Multi-Server Manager" FontSize="10" Foreground="#A0A0A0"/>
+                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Thin Edition)" FontSize="10" Foreground="#A0A0A0"/>
                 </StackPanel>
             </StackPanel>
 
@@ -56,7 +56,7 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main Navigation View (Cleaned Up) -->
+        <!-- Main Navigation View -->
         <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
@@ -80,6 +80,18 @@
                 <NavigationViewItem Content="Explorador de Archivos" Tag="FileManager">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Folder"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Content="Entornos Java (JDK)" Tag="JavaRuntimes">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Library"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Content="Ajustes Globales" Tag="LauncherSettings">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Admin"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
@@ -161,7 +173,7 @@
                     </Grid>
                 </Grid>
 
-                <!-- 2. SERVER CREATION WIZARD VIEW (BY PARTS / MULTI-STEP) -->
+                <!-- 2. SERVER CREATION WIZARD VIEW -->
                 <Grid x:Name="ViewWizard" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="20">
@@ -498,6 +510,89 @@
                             <TextBlock Grid.Row="2" x:Name="TxtFileEditorStatus" Text="Selecciona un archivo para editar su contenido directamente desde el launcher." FontSize="11" Foreground="#AAAAAA" Margin="0,8,0,0"/>
                         </Grid>
                     </Border>
+                </Grid>
+
+                <!-- 5. JAVA RUNTIMES MANAGER VIEW -->
+                <Grid x:Name="ViewJavaRuntimes" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="Gestión Avanzada de Entornos de Ejecución Java (JDK)" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Descarga e instala versiones de Java 8, 17, 21, 22 o 25 sin afectar la configuración del sistema operativo." FontSize="12" Foreground="#BBBBBB"/>
+
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Versiones Disponibles para Servidores de Minecraft" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                    <ListView x:Name="LstJavaVersions" SelectionChanged="LstJavaVersions_SelectionChanged">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Padding="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="#38BDF8"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#CCCCCC"/>
+                                                        <TextBlock Text="{Binding InstalledPath}" FontSize="10" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" x:Name="BtnInstallJavaItem" Content="Instalar JDK" Tag="{Binding}" Click="BtnInstallJavaItem_Click" VerticalAlignment="Center" CornerRadius="6"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+
+                                    <ProgressBar x:Name="JavaDownloadProgress" Value="0" Maximum="100" Height="8" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="TxtJavaProgressStatus" Text="" FontSize="11" Foreground="#38BDF8"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 6. LAUNCHER GLOBAL SETTINGS VIEW -->
+                <Grid x:Name="ViewLauncherSettings" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="Ajustes Globales del Launcher Zenith" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Rutas del Sistema y Descargas" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Carpeta de Runtimes Java (Aislada de AppX)" FontSize="12"/>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="TxtCustomJavaPath" IsReadOnly="True"/>
+                                            <Button Grid.Column="1" Content="Restablecer por Defecto" Click="BtnResetJavaPath_Click" CornerRadius="6"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Comportamiento y Automatización" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                    <ToggleSwitch x:Name="ToggleAutoEulaDefault" Header="Aceptar EULA automáticamente en nuevos servidores" IsOn="True"/>
+                                    <ToggleSwitch x:Name="ToggleAutoRestart" Header="Reinicio automático del servidor en caso de caída (Auto-restart)" IsOn="False"/>
+                                    <ToggleSwitch x:Name="ToggleAikarsDefault" Header="Usar optimización Aikar JVM por defecto" IsOn="True"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Diseño y Efectos Visuales" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                    <TextBlock Text="Fondo de Ventana Activo: DesktopAcrylicBackdrop (Acrylic Thin)" FontSize="12" Foreground="#38BDF8" FontWeight="SemiBold"/>
+                                    <TextBlock Text="La interfaz utiliza desenfoque acrílico delgado de Windows 11 / 10 para una integración estética moderna." FontSize="11" Foreground="#AAAAAA"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
 
             </Grid>

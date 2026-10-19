@@ -47,6 +47,7 @@ namespace Zenith.Core.Services
                 if (e.Data != null)
                 {
                     OutputReceived?.Invoke(e.Data);
+                    AnalyzeConsoleLine(e.Data);
                 }
             };
 
@@ -55,6 +56,7 @@ namespace Zenith.Core.Services
                 if (e.Data != null)
                 {
                     OutputReceived?.Invoke($"[ERROR] {e.Data}");
+                    AnalyzeConsoleLine(e.Data);
                 }
             };
 
@@ -72,6 +74,18 @@ namespace Zenith.Core.Services
             }
 
             return started;
+        }
+
+        private void AnalyzeConsoleLine(string line)
+        {
+            if (line.Contains("UnsupportedClassVersionError", StringComparison.OrdinalIgnoreCase))
+            {
+                OutputReceived?.Invoke("[SUGERENCIA ZENITH] Tu servidor requiere una versión de Java superior a la configurada. Por favor actualiza a Java 21 o Java 25 en Ajustes.");
+            }
+            else if (line.Contains("Access to the path", StringComparison.OrdinalIgnoreCase) && line.Contains("denied", StringComparison.OrdinalIgnoreCase))
+            {
+                OutputReceived?.Invoke("[SUGERENCIA ZENITH] Permiso denegado al acceder a Java. Cambia la ruta de ejecuciones de Java en la pestaña de Ajustes a una carpeta fuera de AppX.");
+            }
         }
 
         public void SendCommand(string command)

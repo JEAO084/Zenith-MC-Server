@@ -48,6 +48,8 @@ namespace Zenith_MC_Server
             RefreshServerProfilesUI();
             LoadActiveServerUI();
             UpdateStatusIndicator(false);
+            LoadJavaRuntimesUI();
+            LoadLauncherSettingsUI();
 
             // Fetch Mojang versions for wizard
             _ = LoadWizardVersionsAsync();
@@ -286,6 +288,8 @@ namespace Zenith_MC_Server
             ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
             ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
             ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
+            ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
+            ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -303,6 +307,14 @@ namespace Zenith_MC_Server
                 else if (tag == "FileManager")
                 {
                     RefreshFileList();
+                }
+                else if (tag == "JavaRuntimes")
+                {
+                    LoadJavaRuntimesUI();
+                }
+                else if (tag == "LauncherSettings")
+                {
+                    LoadLauncherSettingsUI();
                 }
             }
         }
@@ -357,8 +369,10 @@ namespace Zenith_MC_Server
                 string javaPath = profile.JavaExecutablePath;
                 if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
                 {
-                    var installedJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
-                    javaPath = installedJava != null ? installedJava.InstalledPath : "java";
+                    int reqJava = _downloadService?.GetRecommendedJavaVersion(profile.Version) ?? 21;
+                    var targetJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => v.MajorVersion == reqJava && File.Exists(v.InstalledPath))
+                                   ?? _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
+                    javaPath = targetJava != null ? targetJava.InstalledPath : "java";
                 }
 
                 AppendConsoleLog($"[Zenith] Iniciando servidor '{profile.Name}' ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
@@ -431,6 +445,12 @@ namespace Zenith_MC_Server
             {
                 AppendConsoleLog($"[Zenith] El servidor se ha detenido con código de salida: {exitCode}");
                 UpdateStatusIndicator(false);
+
+                if (ToggleAutoRestart.IsOn && exitCode != 0)
+                {
+                    AppendConsoleLog("[Zenith Auto-Restart] Reiniciando servidor automáticamente en 3 segundos...");
+                    Task.Delay(3000).ContinueWith(_ => DispatcherQueue.TryEnqueue(() => BtnStartServer_Click(this, new RoutedEventArgs())));
+                }
             });
         }
 
@@ -625,6 +645,67 @@ namespace Zenith_MC_Server
                 _selectedFileItem = null;
                 RefreshFileList();
             }
+        }
+
+        #endregion
+
+        #region Java Runtimes & Launcher Settings
+
+        private void LoadJavaRuntimesUI()
+        {
+            if (_javaService == null) return;
+            var versions = _javaService.GetAvailableJavaVersions();
+            LstJavaVersions.ItemsSource = versions;
+        }
+
+        private void LstJavaVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+        }
+
+        private async void BtnInstallJavaItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is JavaVersionOption option && _javaService != null)
+            {
+                btn.IsEnabled = false;
+                JavaDownloadProgress.Visibility = Visibility.Visible;
+                TxtJavaProgressStatus.Text = $"Descargando {option.Name}...";
+
+                try
+                {
+                    string path = await _javaService.DownloadAndExtractJavaAsync(option, p =>
+                    {
+                        DispatcherQueue.TryEnqueue(() => JavaDownloadProgress.Value = p);
+                    });
+
+                    TxtJavaProgressStatus.Text = $"¡Java {option.MajorVersion} instalado correctamente!";
+                    LoadJavaRuntimesUI();
+                }
+                catch (Exception ex)
+                {
+                    TxtJavaProgressStatus.Text = $"Error instalando JDK: {ex.Message}";
+                }
+                finally
+                {
+                    btn.IsEnabled = true;
+                    JavaDownloadProgress.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void LoadLauncherSettingsUI()
+        {
+            if (_javaService != null)
+            {
+                TxtCustomJavaPath.Text = _javaService.RuntimesDirectory;
+            }
+        }
+
+        private void BtnResetJavaPath_Click(object sender, RoutedEventArgs e)
+        {
+            string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZenithMCServer", "runtimes", "java");
+            _javaService?.SetCustomRuntimesDirectory(defaultDir);
+            LoadLauncherSettingsUI();
+            LoadJavaRuntimesUI();
         }
 
         #endregion

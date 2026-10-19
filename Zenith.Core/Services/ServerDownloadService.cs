@@ -29,12 +29,18 @@ namespace Zenith.Core.Services
 
             string v = mcVersion.ToLowerInvariant().Trim();
 
-            if (v.Contains("w") || v.Contains("pre") || v.Contains("rc") || v.Contains("snapshot"))
+            // Check for class 69.0 / Java 25 requirements (e.g. Paper 26.x or experimental builds)
+            if (v.StartsWith("26.") || v.Contains("26.3") || v.Contains("exp") || v.Contains("25"))
             {
-                return 21;
+                return 25;
             }
 
-            if (v.StartsWith("1.20.5") || v.StartsWith("1.20.6") || v.StartsWith("1.21") || v.StartsWith("1.22") || v.StartsWith("26."))
+            if (v.Contains("w") || v.Contains("pre") || v.Contains("rc") || v.Contains("snapshot"))
+            {
+                return 22;
+            }
+
+            if (v.StartsWith("1.20.5") || v.StartsWith("1.20.6") || v.StartsWith("1.21") || v.StartsWith("1.22"))
             {
                 return 21;
             }

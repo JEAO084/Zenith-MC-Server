@@ -13,6 +13,8 @@ namespace Zenith.Tests
             var versions = service.GetAvailableJavaVersions();
 
             Assert.NotEmpty(versions);
+            Assert.Contains(versions, v => v.MajorVersion == 25);
+            Assert.Contains(versions, v => v.MajorVersion == 22);
             Assert.Contains(versions, v => v.MajorVersion == 21);
             Assert.Contains(versions, v => v.MajorVersion == 17);
             Assert.Contains(versions, v => v.MajorVersion == 8);
@@ -23,9 +25,13 @@ namespace Zenith.Tests
         {
             var service = new ServerDownloadService();
 
-            // Snapshots and 26.x or 1.20.5+ -> Java 21
-            Assert.Equal(21, service.GetRecommendedJavaVersion("26w01a"));
-            Assert.Equal(21, service.GetRecommendedJavaVersion("24w14a"));
+            // Experimental versions (26.x) -> Java 25
+            Assert.Equal(25, service.GetRecommendedJavaVersion("26.3"));
+
+            // Snapshots -> Java 22
+            Assert.Equal(22, service.GetRecommendedJavaVersion("24w14a"));
+
+            // 1.20.5 - 1.21 -> Java 21
             Assert.Equal(21, service.GetRecommendedJavaVersion("1.20.5"));
             Assert.Equal(21, service.GetRecommendedJavaVersion("1.21"));
 
