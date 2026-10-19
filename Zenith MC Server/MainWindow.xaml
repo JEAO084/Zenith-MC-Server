@@ -34,7 +34,7 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher & Multi-Server Manager" FontSize="10" Foreground="#A0A0A0"/>
+                    <TextBlock Text="Launcher &amp; Multi-Server Manager" FontSize="10" Foreground="#A0A0A0"/>
                 </StackPanel>
             </StackPanel>
 
