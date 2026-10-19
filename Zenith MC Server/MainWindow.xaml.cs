@@ -28,20 +28,19 @@ namespace Zenith_MC_Server
 
         public MainWindow()
         {
-            this.InitializeComponent();
-
-            // Custom Title Bar Integration
-            this.ExtendsContentIntoTitleBar = true;
-            this.SetTitleBar(AppTitleBar);
-
             _serverManager = new ServerManagerService();
             _javaService = new JavaInstallerService();
             _downloadService = new ServerDownloadService();
             _configService = new ServerConfigService();
             _fileManager = new FileManagerService();
             _processManager = new ServerProcessManager();
-
             _currentProperties = new ServerPropertiesConfig();
+
+            this.InitializeComponent();
+
+            // Custom Title Bar Integration
+            this.ExtendsContentIntoTitleBar = true;
+            this.SetTitleBar(AppTitleBar);
 
             _processManager.OutputReceived += OnServerOutputReceived;
             _processManager.ProcessExited += OnServerProcessExited;
@@ -58,6 +57,7 @@ namespace Zenith_MC_Server
 
         private void RefreshServerProfilesUI()
         {
+            if (_serverManager == null) return;
             var profiles = _serverManager.GetProfiles();
             CmbServerSelector.ItemsSource = profiles;
             if (_serverManager.ActiveProfile != null)
@@ -68,7 +68,7 @@ namespace Zenith_MC_Server
 
         private void CmbServerSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (CmbServerSelector.SelectedItem is ServerProfile profile)
+            if (_serverManager != null && CmbServerSelector.SelectedItem is ServerProfile profile)
             {
                 _serverManager.SelectProfile(profile.Id);
                 LoadActiveServerUI();
@@ -77,6 +77,7 @@ namespace Zenith_MC_Server
 
         private void BtnCreateServerProfile_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null) return;
             string newName = $"Servidor_{DateTime.Now:mm_ss}";
             var newProfile = _serverManager.CreateProfile(newName, "Paper", "1.20.4", 4);
             RefreshServerProfilesUI();
@@ -86,6 +87,7 @@ namespace Zenith_MC_Server
 
         private void LoadActiveServerUI()
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -150,6 +152,7 @@ namespace Zenith_MC_Server
 
         private void BtnStartServer_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null || _configService == null || _processManager == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -182,7 +185,7 @@ namespace Zenith_MC_Server
                 string javaPath = profile.JavaExecutablePath;
                 if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
                 {
-                    var installedJava = _javaService.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
+                    var installedJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
                     javaPath = installedJava != null ? installedJava.InstalledPath : "java";
                 }
 
@@ -201,6 +204,7 @@ namespace Zenith_MC_Server
 
         private async void BtnStopServer_Click(object sender, RoutedEventArgs e)
         {
+            if (_processManager == null) return;
             AppendConsoleLog("[Zenith] Enviando comando 'stop' al servidor...");
             await _processManager.StopServerAsync();
             UpdateStatusIndicator(false);
@@ -208,7 +212,7 @@ namespace Zenith_MC_Server
 
         private void CmbRamAllocation_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_serverManager.ActiveProfile != null && CmbRamAllocation.SelectedItem is ComboBoxItem item)
+            if (_serverManager != null && _serverManager.ActiveProfile != null && CmbRamAllocation.SelectedItem is ComboBoxItem item)
             {
                 if (int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int parsedRam))
                 {
@@ -234,7 +238,7 @@ namespace Zenith_MC_Server
         private void SendConsoleInput()
         {
             string cmd = TxtConsoleInput.Text.Trim();
-            if (!string.IsNullOrEmpty(cmd))
+            if (!string.IsNullOrEmpty(cmd) && _processManager != null)
             {
                 _processManager.SendCommand(cmd);
                 TxtConsoleInput.Text = string.Empty;
@@ -270,6 +274,7 @@ namespace Zenith_MC_Server
 
         private async Task LoadMojangVersionsAsync()
         {
+            if (_downloadService == null) return;
             bool showSnapshots = ChkIncludeSnapshots.IsChecked == true;
             _allMojangVersions = await _downloadService.GetMojangVersionsAsync(showSnapshots);
 
@@ -308,6 +313,7 @@ namespace Zenith_MC_Server
 
         private async Task HandleJavaDownloadAsync(int majorVersion)
         {
+            if (_javaService == null) return;
             var versions = _javaService.GetAvailableJavaVersions();
             var target = versions.FirstOrDefault(v => v.MajorVersion == majorVersion);
             if (target != null)
@@ -341,6 +347,7 @@ namespace Zenith_MC_Server
 
         private async Task HandleJarDownloadAsync(ServerSoftwareType type)
         {
+            if (_serverManager == null || _downloadService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -382,6 +389,7 @@ namespace Zenith_MC_Server
 
         private void LoadConfigurationToUI()
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -400,6 +408,7 @@ namespace Zenith_MC_Server
 
         private void LoadEngineConfigs()
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -412,6 +421,7 @@ namespace Zenith_MC_Server
 
         private void SelectComboByContent(ComboBox combo, string val)
         {
+            if (combo == null) return;
             for (int i = 0; i < combo.Items.Count; i++)
             {
                 if (combo.Items[i] is ComboBoxItem item && item.Content.ToString()?.Equals(val, StringComparison.OrdinalIgnoreCase) == true)
@@ -424,6 +434,7 @@ namespace Zenith_MC_Server
 
         private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -452,6 +463,7 @@ namespace Zenith_MC_Server
 
         private void BtnSavePaperConfig_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -461,6 +473,7 @@ namespace Zenith_MC_Server
 
         private void BtnSaveSpigotConfig_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -476,7 +489,7 @@ namespace Zenith_MC_Server
 
         private void ToggleEula_Toggled(object sender, RoutedEventArgs e)
         {
-            if (_serverManager.ActiveProfile != null)
+            if (_serverManager != null && _serverManager.ActiveProfile != null && _configService != null)
             {
                 _configService.SetEulaAccepted(_serverManager.ActiveProfile.DirectoryPath, ToggleEula.IsOn);
             }
@@ -488,6 +501,7 @@ namespace Zenith_MC_Server
 
         private void RefreshFileList()
         {
+            if (_serverManager == null || _fileManager == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -502,6 +516,7 @@ namespace Zenith_MC_Server
 
         private void LstFileItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_fileManager == null) return;
             if (LstFileItems.SelectedItem is ServerFileItem item)
             {
                 _selectedFileItem = item;
@@ -523,7 +538,7 @@ namespace Zenith_MC_Server
 
         private void BtnSaveFileContent_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedFileItem != null && !_selectedFileItem.IsDirectory)
+            if (_fileManager != null && _selectedFileItem != null && !_selectedFileItem.IsDirectory)
             {
                 _fileManager.SaveFileText(_selectedFileItem.FullPath, TxtCodeEditor.Text);
                 TxtFileEditorStatus.Text = $"¡Guardado exitosamente a las {DateTime.Now:HH:mm:ss}!";
@@ -533,6 +548,7 @@ namespace Zenith_MC_Server
 
         private void BtnNewFile_Click(object sender, RoutedEventArgs e)
         {
+            if (_serverManager == null || _fileManager == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -544,7 +560,7 @@ namespace Zenith_MC_Server
 
         private void BtnDeleteFile_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedFileItem != null)
+            if (_fileManager != null && _selectedFileItem != null)
             {
                 _fileManager.DeleteItem(_selectedFileItem.FullPath);
                 TxtCodeEditor.Text = string.Empty;
