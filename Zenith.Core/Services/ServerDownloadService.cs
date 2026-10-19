@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Zenith.Core.Models;
 
@@ -26,16 +27,48 @@ namespace Zenith.Core.Services
         {
             if (string.IsNullOrWhiteSpace(mcVersion)) return 21;
 
-            if (mcVersion.StartsWith("1.20.5") || mcVersion.StartsWith("1.21"))
+            string v = mcVersion.ToLowerInvariant().Trim();
+
+            // Snapshots and previews (e.g., 24w01a, 25w10a, 26w01a, 1.21-pre1, etc.)
+            if (v.Contains("w") || v.Contains("pre") || v.Contains("rc") || v.Contains("snapshot"))
+            {
                 return 21;
+            }
 
-            if (mcVersion.StartsWith("1.17") || mcVersion.StartsWith("1.18") || mcVersion.StartsWith("1.19") || mcVersion.StartsWith("1.20"))
+            // Version 1.20.5, 1.20.6, 1.21+, 26.+
+            if (v.StartsWith("1.20.5") || v.StartsWith("1.20.6") || v.StartsWith("1.21") || v.StartsWith("1.22") || v.StartsWith("26."))
+            {
+                return 21;
+            }
+
+            // Version 1.17 - 1.20.4
+            if (v.StartsWith("1.17") || v.StartsWith("1.18") || v.StartsWith("1.19") || v.StartsWith("1.20"))
+            {
                 return 17;
+            }
 
-            if (mcVersion.StartsWith("1.13") || mcVersion.StartsWith("1.14") || mcVersion.StartsWith("1.15") || mcVersion.StartsWith("1.16"))
+            // Version 1.13 - 1.16.5
+            if (v.StartsWith("1.13") || v.StartsWith("1.14") || v.StartsWith("1.15") || v.StartsWith("1.16"))
+            {
                 return 16;
+            }
 
+            // Version <= 1.12.2 (Legacy)
             return 8;
+        }
+
+        public List<string> GetCompatibleLoadersForVersion(string mcVersion)
+        {
+            int javaVer = GetRecommendedJavaVersion(mcVersion);
+            var loaders = new List<string> { "Paper", "Purpur", "Spigot", "Vanilla" };
+
+            // Fabric support for 1.14+
+            if (javaVer >= 16)
+            {
+                loaders.Add("Fabric");
+            }
+
+            return loaders;
         }
 
         public async Task<List<MinecraftVersionInfo>> GetMojangVersionsAsync(bool includeSnapshots = false)
@@ -73,7 +106,7 @@ namespace Zenith.Core.Services
                 versions.Add(new MinecraftVersionInfo { Id = "1.20.4", Type = "release", RecommendedJavaVersion = 21 });
                 versions.Add(new MinecraftVersionInfo { Id = "1.20.2", Type = "release", RecommendedJavaVersion = 17 });
                 versions.Add(new MinecraftVersionInfo { Id = "1.19.4", Type = "release", RecommendedJavaVersion = 17 });
-                versions.Add(new MinecraftVersionInfo { Id = "1.16.5", Type = "release", RecommendedJavaVersion = 8 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.16.5", Type = "release", RecommendedJavaVersion = 16 });
                 versions.Add(new MinecraftVersionInfo { Id = "1.12.2", Type = "release", RecommendedJavaVersion = 8 });
             }
 
@@ -92,17 +125,7 @@ namespace Zenith.Core.Services
                     DownloadUrl = "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar",
                     RecommendedJavaVersion = "Java 21 / 17",
                     FileName = "paper-1.20.4.jar",
-                    Description = "Paper MC: Alto rendimiento, optimización masiva de rendimiento y soporte para plugins Spigot/Bukkit."
-                },
-                new ServerJarOption
-                {
-                    SoftwareType = ServerSoftwareType.Paper,
-                    Version = "1.20.2",
-                    Build = "318",
-                    DownloadUrl = "https://api.papermc.io/v2/projects/paper/versions/1.20.2/builds/318/downloads/paper-1.20.2-318.jar",
-                    RecommendedJavaVersion = "Java 17",
-                    FileName = "paper-1.20.2.jar",
-                    Description = "Paper MC para versión 1.20.2 con excelente compatibilidad y rendimiento."
+                    Description = "Paper MC: Alto rendimiento, optimización masiva y soporte para plugins Spigot/Bukkit."
                 },
                 new ServerJarOption
                 {
@@ -112,7 +135,7 @@ namespace Zenith.Core.Services
                     DownloadUrl = "https://api.purpurmc.org/v2/purpur/1.20.4/latest/download",
                     RecommendedJavaVersion = "Java 21 / 17",
                     FileName = "purpur-1.20.4.jar",
-                    Description = "Purpur MC: Fork de Paper con altísima personalización y configuración avanzada de juego."
+                    Description = "Purpur MC: Fork de Paper con altísima personalización de mecánicas de juego."
                 },
                 new ServerJarOption
                 {

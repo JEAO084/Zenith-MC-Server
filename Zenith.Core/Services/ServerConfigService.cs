@@ -70,6 +70,11 @@ namespace Zenith.Core.Services
             File.WriteAllText(filePath, content, Encoding.UTF8);
         }
 
+        public string GetAikarsJvmFlags(int ramGb = 4)
+        {
+            return "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5";
+        }
+
         public string GetLaunchArguments(string jarFileName, int ramGb = 4, string customArgs = "")
         {
             StringBuilder sb = new StringBuilder();

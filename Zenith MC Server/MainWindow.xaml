@@ -41,8 +41,8 @@
             <!-- Active Server Selector (Multi-Server Manager) -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <TextBlock Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
-                <ComboBox x:Name="CmbServerSelector" Width="200" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
-                <Button Content="+ Nuevo Servidor" Click="BtnCreateServerProfile_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
+                <ComboBox x:Name="CmbServerSelector" Width="180" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
+                <Button Content="+ Crear Servidor (Wizard)" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
             </StackPanel>
 
             <!-- Server Running Status Indicator -->
@@ -64,6 +64,13 @@
                         <SymbolIcon Symbol="Play"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+
+                <NavigationViewItem Content="Creación Asistida (Wizard)" Tag="Wizard">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Add"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
                 <NavigationViewItem Content="Descargas y Versiones" Tag="Downloads">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Download"/>
@@ -160,19 +167,175 @@
                     </Grid>
                 </Grid>
 
-                <!-- 2. DOWNLOADS & VERSIONS VIEW -->
+                <!-- 2. SERVER CREATION WIZARD VIEW (BY PARTS / MULTI-STEP) -->
+                <Grid x:Name="ViewWizard" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="Asistente de Creación de Servidor por Partes" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+                            <!-- Step Navigation Header -->
+                            <Grid Background="#1D122A" Padding="16" CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                                        <TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Nombre y Versión" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                                        <TextBlock Text="2" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Loader / Motor" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                                        <TextBlock Text="3" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Entorno Java" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+                                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                                        <TextBlock Text="4" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="RAM y Parámetros" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Wizard Form Cards -->
+                            <StackPanel Spacing="16">
+
+                                <!-- Part 1: Name, Icon & Version -->
+                                <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Parte 1: Nombre, Logo e Identidad del Servidor" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                        <Grid ColumnSpacing="16" RowSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="200"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                                <TextBlock Text="Nombre del Servidor" FontSize="12"/>
+                                                <TextBox x:Name="WzdServerName" Text="Mi Servidor Survival"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                                <TextBlock Text="Logo / Icono Decorativo" FontSize="12"/>
+                                                <ComboBox x:Name="WzdServerIcon" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                                    <ComboBoxItem Content="⛏️ Minecraft Clásico"/>
+                                                    <ComboBoxItem Content="🗡️ Survival / PvP"/>
+                                                    <ComboBoxItem Content="🛡️ Hardcore"/>
+                                                    <ComboBoxItem Content="🏰 Ciudades / Construcción"/>
+                                                    <ComboBoxItem Content="🌌 Skyblock"/>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                                                <Grid>
+                                                    <TextBlock Text="Seleccionar Versión de Minecraft" FontSize="12" VerticalAlignment="Center"/>
+                                                    <CheckBox x:Name="WzdChkSnapshots" Content="Mostrar Snapshots y Previews (ej: 26.x / 24w)" Checked="WzdChkSnapshots_CheckedChanged" Unchecked="WzdChkSnapshots_CheckedChanged" HorizontalAlignment="Right"/>
+                                                </Grid>
+                                                <ComboBox x:Name="WzdCmbVersion" SelectionChanged="WzdCmbVersion_SelectionChanged" HorizontalAlignment="Stretch"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Part 2: Loader Engine Selection -->
+                                <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                        <TextBlock Text="Cargadores filtrados según la versión seleccionada:" FontSize="12" Foreground="#BBBBBB"/>
+
+                                        <ComboBox x:Name="WzdCmbLoader" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                            <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
+                                            <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
+                                            <ComboBoxItem Content="Spigot MC (Clásico Bukkit/Spigot)"/>
+                                            <ComboBoxItem Content="Vanilla (Servidor Oficial Mojang)"/>
+                                            <ComboBoxItem Content="Fabric (Mods livianos)"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Part 3: Strict Java Mapping -->
+                                <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Parte 3: Verificación y Requisito Estricto de Java" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                        <Border x:Name="WzdJavaNoticeBorder" Background="#1E2A3A" Padding="12" CornerRadius="8">
+                                            <StackPanel Spacing="6">
+                                                <TextBlock x:Name="WzdTxtJavaRequirement" Text="Requisito Detectado: Java 21 (Necesario para Minecraft 1.20.5+ y 26.x)" FontWeight="Bold" Foreground="#38BDF8"/>
+                                                <TextBlock x:Name="WzdTxtJavaStatus" Text="Estado: Verificando disponibilidad..." FontSize="12" Foreground="#DDDDDD"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Part 4: RAM, Aikar's Flags & Finalize -->
+                                <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="Parte 4: Asignación de Memoria, Flags Aikar y Puerto" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+
+                                        <Grid ColumnSpacing="16" RowSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                <TextBlock Text="Memoria RAM Asignada" FontSize="12"/>
+                                                <ComboBox x:Name="WzdCmbRam" SelectedIndex="1" HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="2 GB"/>
+                                                    <ComboBoxItem Content="4 GB"/>
+                                                    <ComboBoxItem Content="8 GB"/>
+                                                    <ComboBoxItem Content="16 GB"/>
+                                                    <ComboBoxItem Content="24 GB"/>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <TextBlock Text="Puerto TCP del Servidor" FontSize="12"/>
+                                                <TextBox x:Name="WzdTxtPort" Text="25565"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <ToggleSwitch x:Name="WzdToggleAikarsFlags" Header="Optimización Avanzada de JVM (Flags de Aikar)" IsOn="True" OffContent="Desactivado" OnContent="Activado (-XX:+UseG1GC...)"/>
+                                        <ToggleSwitch x:Name="WzdToggleEula" Header="Aceptar EULA de Minecraft Automáticamente" IsOn="True" OffContent="No" OnContent="Sí (eula=true)"/>
+
+                                        <Button Content="🚀 Finalizar y Crear Servidor" Click="BtnFinishWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" HorizontalAlignment="Right" Margin="0,12,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 3. DOWNLOADS & VERSIONS VIEW -->
                 <Grid x:Name="ViewDownloads" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="20">
                             <TextBlock Text="Descargas de Versiones, Java y Motores Esenciales" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
 
-                            <!-- Global Progress Indicator -->
                             <StackPanel x:Name="GlobalDownloadProgressPanel" Visibility="Collapsed" Spacing="6" Background="#2A1535" Padding="12" CornerRadius="8">
                                 <TextBlock x:Name="TxtDownloadStatus" Text="Descargando componente..." FontSize="12" Foreground="#38BDF8" FontWeight="SemiBold"/>
                                 <ProgressBar x:Name="DownloadProgressBar" Value="0" Maximum="100" Height="8"/>
                             </StackPanel>
 
-                            <!-- Section 1: Mojang & Paper Version Selector -->
                             <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <StackPanel Spacing="12">
                                     <Grid>
@@ -205,7 +368,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Section 2: Java Runtimes -->
                             <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="2. Entornos de Ejecución Java (JRE / JDK)" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -220,7 +382,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                     <TextBlock Text="Java 21 (Temurin JDK)" FontWeight="Bold" Foreground="#FFFFFF"/>
-                                                    <TextBlock Text="Recomendado para Minecraft 1.20.5+ y 1.21" FontSize="11" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="Recomendado para Minecraft 1.20.5+, 1.21 y Snapshots 26.x" FontSize="11" Foreground="#AAAAAA"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Content="Descargar e Instalar Java 21" Click="BtnDownloadJava21_Click" Background="#7C3AED" Foreground="White" CornerRadius="6"/>
                                             </Grid>
@@ -257,7 +419,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Section 3: Server Jars -->
                             <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="3. Descargar Núcleos de Servidor (Paper, Purpur, Vanilla, Spigot)" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
@@ -311,7 +472,7 @@
                     </ScrollViewer>
                 </Grid>
 
-                <!-- 3. GUI CONFIGURATOR VIEW (WITH ENGINE TABS) -->
+                <!-- 4. GUI CONFIGURATOR VIEW -->
                 <Grid x:Name="ViewConfig" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -324,13 +485,10 @@
                         <TextBlock Text="Ajusta server.properties, eula.txt, spigot.yml y paper.yml mediante interfaz gráfica." FontSize="12" Foreground="#BBBBBB"/>
                     </StackPanel>
 
-                    <!-- Engine Specific Tabs -->
                     <Pivot Grid.Row="1">
-                        <!-- Tab 1: General Server Properties -->
                         <PivotItem Header="server.properties">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="16" Margin="0,12,0,0">
-                                    <!-- EULA Card -->
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -345,7 +503,6 @@
                                         </Grid>
                                     </Border>
 
-                                    <!-- General Settings -->
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
                                         <StackPanel Spacing="12">
                                             <TextBlock Text="Ajustes de Juego y Red" FontWeight="SemiBold" FontSize="15" Foreground="#A78BFA"/>
@@ -405,7 +562,6 @@
                             </ScrollViewer>
                         </PivotItem>
 
-                        <!-- Tab 2: Paper Engine Config -->
                         <PivotItem Header="paper-global.yml">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
@@ -417,7 +573,6 @@
                             </Grid>
                         </PivotItem>
 
-                        <!-- Tab 3: Spigot Engine Config -->
                         <PivotItem Header="spigot.yml">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
@@ -436,7 +591,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- 4. FILE MANAGER & CODE EDITOR VIEW -->
+                <!-- 5. FILE MANAGER & CODE EDITOR VIEW -->
                 <Grid x:Name="ViewFileManager" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="280"/>
