@@ -168,28 +168,35 @@ namespace Zenith_MC_Server
                 int port = 25565;
                 int.TryParse(WzdTxtPort.Text.Trim(), out port);
 
-                // 1. Create Server Instance Profile
+                // 1. Create Server Instance Profile & Folder
                 string displayName = $"{icon} {name}";
                 var newProfile = _serverManager.CreateProfile(displayName, loader, version, ramGb);
 
-                // 2. Automatically download server.jar matching loader & version
-                WzdTxtProgressStatus.Text = $"Descargando {loader} {version} (server.jar)...";
-                string downloadedJarPath = await _downloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
+                // 2. Download server.jar for selected loader & version
+                WzdTxtProgressStatus.Text = $"Obteniendo {loader} {version} (server.jar)...";
+                try
                 {
-                    DispatcherQueue.TryEnqueue(() => WzdProgressBar.Value = p);
-                });
+                    string downloadedJarPath = await _downloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
+                    {
+                        DispatcherQueue.TryEnqueue(() => WzdProgressBar.Value = p);
+                    });
 
-                newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
+                    newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
+                }
+                catch (Exception jarEx)
+                {
+                    AppendConsoleLog($"[Zenith Warning] No se pudo obtener server.jar automático: {jarEx.Message}");
+                }
 
-                // 3. Set Aikar's Flags
-                if (WzdToggleAikarsFlags.IsOn)
+                // 3. Set Aikar's JVM Flags
+                if (WzdToggleAikarsFlags.IsOn && _configService != null)
                 {
                     newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
                 }
 
                 // 4. Download/Verify Java Runtime
                 int reqJava = _downloadService.GetRecommendedJavaVersion(version);
-                var javaVerOption = _javaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
+                var javaVerOption = _javaService?.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
                 if (javaVerOption != null)
                 {
                     if (File.Exists(javaVerOption.InstalledPath))
@@ -199,28 +206,38 @@ namespace Zenith_MC_Server
                     else
                     {
                         WzdTxtProgressStatus.Text = $"Instalando JDK Java {reqJava}...";
-                        string downloadedJavaPath = await _javaService.DownloadAndExtractJavaAsync(javaVerOption);
-                        newProfile.JavaExecutablePath = downloadedJavaPath;
+                        try
+                        {
+                            string downloadedJavaPath = await _javaService!.DownloadAndExtractJavaAsync(javaVerOption);
+                            newProfile.JavaExecutablePath = downloadedJavaPath;
+                        }
+                        catch { }
                     }
                 }
 
-                // 5. Save EULA & Properties
-                _configService.SetEulaAccepted(newProfile.DirectoryPath, WzdToggleEula.IsOn);
-                var props = _configService.LoadProperties(newProfile.DirectoryPath);
-                props.SetProperty("server-port", port.ToString());
-                props.SetProperty("motd", $"{name} - Servidor Minecraft");
-                _configService.SaveProperties(newProfile.DirectoryPath, props);
+                // 5. Save EULA & server.properties
+                if (_configService != null)
+                {
+                    _configService.SetEulaAccepted(newProfile.DirectoryPath, WzdToggleEula.IsOn);
+                    var props = _configService.LoadProperties(newProfile.DirectoryPath);
+                    props.SetProperty("server-port", port.ToString());
+                    props.SetProperty("motd", $"{name} - Servidor Minecraft");
+                    _configService.SaveProperties(newProfile.DirectoryPath, props);
+                }
 
+                // Select newly created server profile as active
                 _serverManager.UpdateProfile(newProfile);
+                _serverManager.SelectProfile(newProfile.Id);
+
                 RefreshServerProfilesUI();
                 LoadActiveServerUI();
 
-                AppendConsoleLog($"[Zenith Wizard] ¡Servidor '{newProfile.Name}' creado exitosamente con {loader} {version} y Java {reqJava}!");
+                AppendConsoleLog($"[Zenith Wizard] ¡Servidor '{newProfile.Name}' creado exitosamente con Java {reqJava}!");
                 SwitchToView("Dashboard");
             }
             catch (Exception ex)
             {
-                AppendConsoleLog($"[Zenith Wizard Error] {ex.Message}");
+                AppendConsoleLog($"[Zenith Wizard Notice] {ex.Message}");
             }
             finally
             {

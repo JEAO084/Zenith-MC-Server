@@ -21,6 +21,7 @@ namespace Zenith.Core.Services
     public class ServerDownloadService
     {
         private readonly HttpClient _httpClient = new();
+        private List<MinecraftVersionInfo> _cachedVersions = new();
 
         public int GetRecommendedJavaVersion(string mcVersion)
         {
@@ -62,6 +63,139 @@ namespace Zenith.Core.Services
             }
 
             return loaders;
+        }
+
+        public async Task<List<MinecraftVersionInfo>> GetMojangVersionsAsync(bool includeSnapshots = false)
+        {
+            var versions = new List<MinecraftVersionInfo>();
+            try
+            {
+                string manifestJson = await _httpClient.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
+                using var doc = JsonDocument.Parse(manifestJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("versions", out var versionsArray))
+                {
+                    foreach (var item in versionsArray.EnumerateArray())
+                    {
+                        string id = item.GetProperty("id").GetString() ?? "";
+                        string type = item.GetProperty("type").GetString() ?? "release";
+                        string url = item.GetProperty("url").GetString() ?? "";
+
+                        var info = new MinecraftVersionInfo
+                        {
+                            Id = id,
+                            Type = type,
+                            Url = url,
+                            RecommendedJavaVersion = GetRecommendedJavaVersion(id)
+                        };
+
+                        _cachedVersions.Add(info);
+
+                        if (!includeSnapshots && type != "release")
+                            continue;
+
+                        versions.Add(info);
+                    }
+                }
+            }
+            catch
+            {
+                versions.Add(new MinecraftVersionInfo { Id = "1.20.4", Type = "release", RecommendedJavaVersion = 21 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.20.2", Type = "release", RecommendedJavaVersion = 17 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.19.4", Type = "release", RecommendedJavaVersion = 17 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.16.5", Type = "release", RecommendedJavaVersion = 16 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.12.2", Type = "release", RecommendedJavaVersion = 8 });
+            }
+
+            return versions;
+        }
+
+        public async Task<string?> GetMojangServerJarUrlAsync(string version)
+        {
+            try
+            {
+                if (_cachedVersions.Count == 0)
+                {
+                    await GetMojangVersionsAsync(true);
+                }
+
+                var verInfo = _cachedVersions.FirstOrDefault(v => v.Id.Equals(version, StringComparison.OrdinalIgnoreCase));
+                if (verInfo != null && !string.IsNullOrEmpty(verInfo.Url))
+                {
+                    string verJson = await _httpClient.GetStringAsync(verInfo.Url);
+                    using var doc = JsonDocument.Parse(verJson);
+                    if (doc.RootElement.TryGetProperty("downloads", out var downloads) &&
+                        downloads.TryGetProperty("server", out var serverObj) &&
+                        serverObj.TryGetProperty("url", out var urlProp))
+                    {
+                        return urlProp.GetString();
+                    }
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        public async Task<string> DownloadServerJarForVersionAsync(string softwareType, string version, string destinationFolder, Action<double>? progressCallback = null)
+        {
+            string cleanType = softwareType.Trim();
+
+            // Try primary loader endpoint
+            try
+            {
+                if (cleanType.Contains("Paper", StringComparison.OrdinalIgnoreCase))
+                {
+                    string? paperUrl = await GetPaperJarUrlAsync(version);
+                    if (!string.IsNullOrEmpty(paperUrl))
+                    {
+                        return await DownloadFileFromUrlAsync(paperUrl, destinationFolder, "server.jar", progressCallback);
+                    }
+                }
+                else if (cleanType.Contains("Purpur", StringComparison.OrdinalIgnoreCase))
+                {
+                    string purpurUrl = $"https://api.purpurmc.org/v2/purpur/{version}/latest/download";
+                    return await DownloadFileFromUrlAsync(purpurUrl, destinationFolder, "server.jar", progressCallback);
+                }
+                else if (cleanType.Contains("Spigot", StringComparison.OrdinalIgnoreCase))
+                {
+                    string spigotUrl = $"https://download.getbukkit.org/spigot/spigot-{version}.jar";
+                    return await DownloadFileFromUrlAsync(spigotUrl, destinationFolder, "server.jar", progressCallback);
+                }
+            }
+            catch { }
+
+            // Fallback 1: Mojang official server.jar for requested version
+            try
+            {
+                string? mojangUrl = await GetMojangServerJarUrlAsync(version);
+                if (!string.IsNullOrEmpty(mojangUrl))
+                {
+                    return await DownloadFileFromUrlAsync(mojangUrl, destinationFolder, "server.jar", progressCallback);
+                }
+            }
+            catch { }
+
+            // Fallback 2: Default stable Mojang Vanilla 1.20.4 server.jar
+            string fallbackUrl = "https://piston-data.mojang.com/v1/objects/833770bed101294204e93d11d30145899224b415/server.jar";
+            return await DownloadFileFromUrlAsync(fallbackUrl, destinationFolder, "server.jar", progressCallback);
+        }
+
+        private async Task<string?> GetPaperJarUrlAsync(string version)
+        {
+            try
+            {
+                string buildsJson = await _httpClient.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{version}");
+                using var doc = JsonDocument.Parse(buildsJson);
+                if (doc.RootElement.TryGetProperty("builds", out var buildsArr) && buildsArr.GetArrayLength() > 0)
+                {
+                    int latestBuild = buildsArr.EnumerateArray().Last().GetInt32();
+                    return $"https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{latestBuild}/downloads/paper-{version}-{latestBuild}.jar";
+                }
+            }
+            catch { }
+
+            return null;
         }
 
         public List<ServerJarOption> GetPresetServerJars()
@@ -111,90 +245,6 @@ namespace Zenith.Core.Services
             };
         }
 
-        public async Task<List<MinecraftVersionInfo>> GetMojangVersionsAsync(bool includeSnapshots = false)
-        {
-            var versions = new List<MinecraftVersionInfo>();
-            try
-            {
-                string manifestJson = await _httpClient.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
-                using var doc = JsonDocument.Parse(manifestJson);
-                var root = doc.RootElement;
-                if (root.TryGetProperty("versions", out var versionsArray))
-                {
-                    foreach (var item in versionsArray.EnumerateArray())
-                    {
-                        string id = item.GetProperty("id").GetString() ?? "";
-                        string type = item.GetProperty("type").GetString() ?? "release";
-                        string url = item.GetProperty("url").GetString() ?? "";
-
-                        if (!includeSnapshots && type != "release")
-                            continue;
-
-                        versions.Add(new MinecraftVersionInfo
-                        {
-                            Id = id,
-                            Type = type,
-                            Url = url,
-                            RecommendedJavaVersion = GetRecommendedJavaVersion(id)
-                        });
-                    }
-                }
-            }
-            catch
-            {
-                versions.Add(new MinecraftVersionInfo { Id = "1.20.4", Type = "release", RecommendedJavaVersion = 21 });
-                versions.Add(new MinecraftVersionInfo { Id = "1.20.2", Type = "release", RecommendedJavaVersion = 17 });
-                versions.Add(new MinecraftVersionInfo { Id = "1.19.4", Type = "release", RecommendedJavaVersion = 17 });
-                versions.Add(new MinecraftVersionInfo { Id = "1.16.5", Type = "release", RecommendedJavaVersion = 16 });
-                versions.Add(new MinecraftVersionInfo { Id = "1.12.2", Type = "release", RecommendedJavaVersion = 8 });
-            }
-
-            return versions;
-        }
-
-        public async Task<string> DownloadServerJarForVersionAsync(string softwareType, string version, string destinationFolder, Action<double>? progressCallback = null)
-        {
-            string cleanType = softwareType.Trim();
-            if (cleanType.Contains("Paper", StringComparison.OrdinalIgnoreCase))
-            {
-                return await DownloadPaperJarAsync(version, destinationFolder, progressCallback);
-            }
-            else if (cleanType.Contains("Purpur", StringComparison.OrdinalIgnoreCase))
-            {
-                string url = $"https://api.purpurmc.org/v2/purpur/{version}/latest/download";
-                return await DownloadFileFromUrlAsync(url, destinationFolder, "server.jar", progressCallback);
-            }
-            else if (cleanType.Contains("Spigot", StringComparison.OrdinalIgnoreCase))
-            {
-                string url = $"https://download.getbukkit.org/spigot/spigot-{version}.jar";
-                return await DownloadFileFromUrlAsync(url, destinationFolder, "server.jar", progressCallback);
-            }
-            else
-            {
-                string url = "https://piston-data.mojang.com/v1/objects/833770bed101294204e93d11d30145899224b415/server.jar";
-                return await DownloadFileFromUrlAsync(url, destinationFolder, "server.jar", progressCallback);
-            }
-        }
-
-        private async Task<string> DownloadPaperJarAsync(string version, string destinationFolder, Action<double>? progressCallback)
-        {
-            try
-            {
-                string buildsJson = await _httpClient.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{version}");
-                using var doc = JsonDocument.Parse(buildsJson);
-                if (doc.RootElement.TryGetProperty("builds", out var buildsArr) && buildsArr.GetArrayLength() > 0)
-                {
-                    int latestBuild = buildsArr.EnumerateArray().Last().GetInt32();
-                    string paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{latestBuild}/downloads/paper-{version}-{latestBuild}.jar";
-                    return await DownloadFileFromUrlAsync(paperUrl, destinationFolder, "server.jar", progressCallback);
-                }
-            }
-            catch { }
-
-            string fallbackUrl = "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar";
-            return await DownloadFileFromUrlAsync(fallbackUrl, destinationFolder, "server.jar", progressCallback);
-        }
-
         public async Task<string> DownloadServerJarAsync(ServerJarOption jarOption, string destinationFolder, Action<double>? progressCallback = null)
         {
             return await DownloadFileFromUrlAsync(jarOption.DownloadUrl, destinationFolder, jarOption.FileName, progressCallback);
@@ -213,7 +263,11 @@ namespace Zenith.Core.Services
 
                 using (var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    response.EnsureSuccessStatusCode();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}");
+                    }
+
                     long totalBytes = response.Content.Headers.ContentLength ?? -1L;
 
                     using (var stream = await response.Content.ReadAsStreamAsync())
