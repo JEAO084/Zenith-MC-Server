@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace Zenith_MC_Server
 {
     public sealed partial class MainWindow : Window
     {
-        private readonly string _serverDirectory;
+        private readonly ServerManagerService _serverManager;
         private readonly JavaInstallerService _javaService;
         private readonly ServerDownloadService _downloadService;
         private readonly ServerConfigService _configService;
@@ -23,32 +24,91 @@ namespace Zenith_MC_Server
 
         private ServerPropertiesConfig _currentProperties;
         private ServerFileItem? _selectedFileItem;
+        private List<MinecraftVersionInfo> _allMojangVersions = new();
 
         public MainWindow()
         {
             this.InitializeComponent();
 
-            _serverDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "minecraft_server");
-            if (!Directory.Exists(_serverDirectory))
-            {
-                Directory.CreateDirectory(_serverDirectory);
-            }
+            // Custom Title Bar Integration
+            this.ExtendsContentIntoTitleBar = true;
+            this.SetTitleBar(AppTitleBar);
 
+            _serverManager = new ServerManagerService();
             _javaService = new JavaInstallerService();
             _downloadService = new ServerDownloadService();
             _configService = new ServerConfigService();
             _fileManager = new FileManagerService();
             _processManager = new ServerProcessManager();
 
-            _currentProperties = _configService.LoadProperties(_serverDirectory);
+            _currentProperties = new ServerPropertiesConfig();
 
             _processManager.OutputReceived += OnServerOutputReceived;
             _processManager.ProcessExited += OnServerProcessExited;
 
+            RefreshServerProfilesUI();
+            LoadActiveServerUI();
+            UpdateStatusIndicator(false);
+
+            // Fetch Mojang versions in background
+            _ = LoadMojangVersionsAsync();
+        }
+
+        #region Multi-Server Manager
+
+        private void RefreshServerProfilesUI()
+        {
+            var profiles = _serverManager.GetProfiles();
+            CmbServerSelector.ItemsSource = profiles;
+            if (_serverManager.ActiveProfile != null)
+            {
+                CmbServerSelector.SelectedItem = _serverManager.ActiveProfile;
+            }
+        }
+
+        private void CmbServerSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbServerSelector.SelectedItem is ServerProfile profile)
+            {
+                _serverManager.SelectProfile(profile.Id);
+                LoadActiveServerUI();
+            }
+        }
+
+        private void BtnCreateServerProfile_Click(object sender, RoutedEventArgs e)
+        {
+            string newName = $"Servidor_{DateTime.Now:mm_ss}";
+            var newProfile = _serverManager.CreateProfile(newName, "Paper", "1.20.4", 4);
+            RefreshServerProfilesUI();
+            LoadActiveServerUI();
+            AppendConsoleLog($"[Zenith] Nuevo servidor creado: {newProfile.Name} en {newProfile.DirectoryPath}");
+        }
+
+        private void LoadActiveServerUI()
+        {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            TxtActiveServerName.Text = $"Servidor: {profile.Name}";
+            TxtActiveSoftware.Text = $"Motor: {profile.SoftwareType} {profile.Version}";
+
+            string serverDir = profile.DirectoryPath;
+            if (!Directory.Exists(serverDir))
+            {
+                Directory.CreateDirectory(serverDir);
+            }
+
+            _currentProperties = _configService.LoadProperties(serverDir);
+            TxtActivePort.Text = $"Puerto: {_currentProperties.GetProperty("server-port", "25565")}";
+
             LoadConfigurationToUI();
             RefreshFileList();
-            UpdateStatusIndicator(false);
+            LoadEngineConfigs();
         }
+
+        #endregion
+
+        #region Navigation View Switching
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
@@ -64,6 +124,7 @@ namespace Zenith_MC_Server
                 if (tag == "Config")
                 {
                     LoadConfigurationToUI();
+                    LoadEngineConfigs();
                 }
                 else if (tag == "FileManager")
                 {
@@ -72,7 +133,9 @@ namespace Zenith_MC_Server
             }
         }
 
-        #region Dashboard & Process Management
+        #endregion
+
+        #region Dashboard & Process Controls
 
         private void UpdateStatusIndicator(bool isRunning)
         {
@@ -87,44 +150,44 @@ namespace Zenith_MC_Server
 
         private void BtnStartServer_Click(object sender, RoutedEventArgs e)
         {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
             try
             {
-                if (!Directory.Exists(_serverDirectory))
+                string serverDir = profile.DirectoryPath;
+                if (!Directory.Exists(serverDir))
                 {
-                    Directory.CreateDirectory(_serverDirectory);
+                    Directory.CreateDirectory(serverDir);
                 }
 
-                var jarFiles = Directory.GetFiles(_serverDirectory, "*.jar");
+                var jarFiles = Directory.GetFiles(serverDir, "*.jar");
                 if (jarFiles.Length == 0)
                 {
-                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor. Ve a 'Descargas' para instalar Paper, Spigot o Vanilla.");
+                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo. Ve a 'Descargas' para instalar Paper, Spigot o Vanilla.");
                     return;
                 }
 
                 string jarPath = Path.GetFileName(jarFiles[0]);
-                TxtActiveSoftware.Text = $"JAR: {jarPath}";
+                TxtActiveSoftware.Text = $"Motor: {jarPath}";
 
-                if (!_configService.CheckEulaAccepted(_serverDirectory))
+                if (!_configService.CheckEulaAccepted(serverDir))
                 {
                     AppendConsoleLog("[Zenith] ADVERTENCIA: El archivo eula.txt no ha sido aceptado. Ve a 'Configuración Visual' para activar eula=true.");
                 }
 
-                int ramGb = 4;
-                if (CmbRamAllocation.SelectedItem is ComboBoxItem item && int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int parsedRam))
+                int ramGb = profile.AllocatedRamGb;
+
+                // Resolve Java executable path
+                string javaPath = profile.JavaExecutablePath;
+                if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
                 {
-                    ramGb = parsedRam;
+                    var installedJava = _javaService.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
+                    javaPath = installedJava != null ? installedJava.InstalledPath : "java";
                 }
 
-                // Resolve Java runtime path (downloaded Java or system Java)
-                string javaPath = "java";
-                var installedJava = _javaService.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
-                if (installedJava != null)
-                {
-                    javaPath = installedJava.InstalledPath;
-                }
-
-                AppendConsoleLog($"[Zenith] Iniciando servidor Minecraft ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
-                bool started = _processManager.StartServer(javaPath, _serverDirectory, jarPath, ramGb);
+                AppendConsoleLog($"[Zenith] Iniciando servidor '{profile.Name}' ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
+                bool started = _processManager.StartServer(javaPath, serverDir, jarPath, ramGb);
                 if (started)
                 {
                     UpdateStatusIndicator(true);
@@ -138,9 +201,21 @@ namespace Zenith_MC_Server
 
         private async void BtnStopServer_Click(object sender, RoutedEventArgs e)
         {
-            AppendConsoleLog("[Zenith] Enviando comando de apagado seguro 'stop'...");
+            AppendConsoleLog("[Zenith] Enviando comando 'stop' al servidor...");
             await _processManager.StopServerAsync();
             UpdateStatusIndicator(false);
+        }
+
+        private void CmbRamAllocation_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_serverManager.ActiveProfile != null && CmbRamAllocation.SelectedItem is ComboBoxItem item)
+            {
+                if (int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int parsedRam))
+                {
+                    _serverManager.ActiveProfile.AllocatedRamGb = parsedRam;
+                    _serverManager.UpdateProfile(_serverManager.ActiveProfile);
+                }
+            }
         }
 
         private void BtnSendCommand_Click(object sender, RoutedEventArgs e)
@@ -191,31 +266,54 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Downloads & Installation
+        #region Asynchronous Downloads & Versions
 
-        private async void BtnDownloadJava21_Click(object sender, RoutedEventArgs e)
+        private async Task LoadMojangVersionsAsync()
         {
-            await HandleJavaDownload(21);
+            bool showSnapshots = ChkIncludeSnapshots.IsChecked == true;
+            _allMojangVersions = await _downloadService.GetMojangVersionsAsync(showSnapshots);
+
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                CmbMojangVersions.ItemsSource = _allMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
+                if (CmbMojangVersions.Items.Count > 0)
+                {
+                    CmbMojangVersions.SelectedIndex = 0;
+                }
+            });
         }
 
-        private async void BtnDownloadJava17_Click(object sender, RoutedEventArgs e)
+        private async void BtnFetchMojangVersions_Click(object sender, RoutedEventArgs e)
         {
-            await HandleJavaDownload(17);
+            await LoadMojangVersionsAsync();
         }
 
-        private async void BtnDownloadJava8_Click(object sender, RoutedEventArgs e)
+        private async void ChkIncludeSnapshots_CheckedChanged(object sender, RoutedEventArgs e)
         {
-            await HandleJavaDownload(8);
+            await LoadMojangVersionsAsync();
         }
 
-        private async Task HandleJavaDownload(int majorVersion)
+        private void CmbMojangVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbMojangVersions.SelectedIndex >= 0 && CmbMojangVersions.SelectedIndex < _allMojangVersions.Count)
+            {
+                var selectedVersion = _allMojangVersions[CmbMojangVersions.SelectedIndex];
+                TxtRecommendedJavaNotice.Text = $"Versión recomendada para Minecraft {selectedVersion.Id}: Java {selectedVersion.RecommendedJavaVersion}";
+            }
+        }
+
+        private async void BtnDownloadJava21_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(21);
+        private async void BtnDownloadJava17_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(17);
+        private async void BtnDownloadJava8_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(8);
+
+        private async Task HandleJavaDownloadAsync(int majorVersion)
         {
             var versions = _javaService.GetAvailableJavaVersions();
             var target = versions.FirstOrDefault(v => v.MajorVersion == majorVersion);
             if (target != null)
             {
-                DownloadProgressBar.Visibility = Visibility.Visible;
-                TxtDownloadStatus.Text = $"Descargando e instalando JDK {majorVersion}...";
+                GlobalDownloadProgressPanel.Visibility = Visibility.Visible;
+                TxtDownloadStatus.Text = $"Descargando e instalando JDK {majorVersion} de forma asíncrona...";
 
                 try
                 {
@@ -232,49 +330,39 @@ namespace Zenith_MC_Server
                 }
                 finally
                 {
-                    DownloadProgressBar.Visibility = Visibility.Collapsed;
+                    GlobalDownloadProgressPanel.Visibility = Visibility.Collapsed;
                 }
             }
         }
 
-        private async void BtnInstallPaper_Click(object sender, RoutedEventArgs e)
-        {
-            await HandleJarDownload(ServerSoftwareType.Paper);
-        }
+        private async void BtnInstallPaper_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Paper);
+        private async void BtnInstallPurpur_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Purpur);
+        private async void BtnInstallVanilla_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Vanilla);
 
-        private async void BtnInstallPurpur_Click(object sender, RoutedEventArgs e)
+        private async Task HandleJarDownloadAsync(ServerSoftwareType type)
         {
-            await HandleJarDownload(ServerSoftwareType.Purpur);
-        }
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
 
-        private async void BtnInstallVanilla_Click(object sender, RoutedEventArgs e)
-        {
-            await HandleJarDownload(ServerSoftwareType.Vanilla);
-        }
-
-        private async void BtnInstallSpigot_Click(object sender, RoutedEventArgs e)
-        {
-            await HandleJarDownload(ServerSoftwareType.Spigot);
-        }
-
-        private async Task HandleJarDownload(ServerSoftwareType type)
-        {
             var presets = _downloadService.GetPresetServerJars();
             var target = presets.FirstOrDefault(j => j.SoftwareType == type);
             if (target != null)
             {
-                DownloadProgressBar.Visibility = Visibility.Visible;
+                GlobalDownloadProgressPanel.Visibility = Visibility.Visible;
                 TxtDownloadStatus.Text = $"Descargando {target.FileName}...";
 
                 try
                 {
-                    string path = await _downloadService.DownloadServerJarAsync(target, _serverDirectory, p =>
+                    string path = await _downloadService.DownloadServerJarAsync(target, profile.DirectoryPath, p =>
                     {
                         DispatcherQueue.TryEnqueue(() => DownloadProgressBar.Value = p);
                     });
 
-                    TxtDownloadStatus.Text = $"¡Server JAR ({target.FileName}) instalado exitosamente!";
-                    TxtActiveSoftware.Text = $"JAR: {target.FileName}";
+                    TxtDownloadStatus.Text = $"¡Server JAR ({target.FileName}) instalado exitosamente en {profile.Name}!";
+                    profile.JarFileName = target.FileName;
+                    _serverManager.UpdateProfile(profile);
+
+                    TxtActiveSoftware.Text = $"Motor: {target.FileName}";
                     RefreshFileList();
                 }
                 catch (Exception ex)
@@ -283,36 +371,43 @@ namespace Zenith_MC_Server
                 }
                 finally
                 {
-                    DownloadProgressBar.Visibility = Visibility.Collapsed;
+                    GlobalDownloadProgressPanel.Visibility = Visibility.Collapsed;
                 }
             }
         }
 
         #endregion
 
-        #region Visual Configuration
+        #region Visual Configuration & Engine Configs
 
         private void LoadConfigurationToUI()
         {
-            _currentProperties = _configService.LoadProperties(_serverDirectory);
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            _currentProperties = _configService.LoadProperties(profile.DirectoryPath);
 
             CfgMotd.Text = _currentProperties.GetProperty("motd", "A Minecraft Server");
             CfgMaxPlayers.Text = _currentProperties.GetProperty("max-players", "20");
             CfgServerPort.Text = _currentProperties.GetProperty("server-port", "25565");
-            CfgViewDistance.Text = _currentProperties.GetProperty("view-distance", "10");
-            CfgSimulationDistance.Text = _currentProperties.GetProperty("simulation-distance", "10");
 
             SelectComboByContent(CfgGamemode, _currentProperties.GetProperty("gamemode", "survival"));
             SelectComboByContent(CfgDifficulty, _currentProperties.GetProperty("difficulty", "easy"));
 
             CfgOnlineMode.IsOn = _currentProperties.GetProperty("online-mode", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgPvp.IsOn = _currentProperties.GetProperty("pvp", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgWhitelist.IsOn = _currentProperties.GetProperty("white-list", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgCommandBlocks.IsOn = _currentProperties.GetProperty("enable-command-block", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgAllowNether.IsOn = _currentProperties.GetProperty("allow-nether", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            ToggleEula.IsOn = _configService.CheckEulaAccepted(profile.DirectoryPath);
+        }
 
-            ToggleEula.IsOn = _configService.CheckEulaAccepted(_serverDirectory);
-            TxtActivePort.Text = $"Puerto: {CfgServerPort.Text}";
+        private void LoadEngineConfigs()
+        {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            var paperCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "paper-global.yml", "# Paper Global Configuration\nverbose: false\nconfig-version: 28\n");
+            TxtPaperConfigEditor.Text = paperCfg.Content;
+
+            var spigotCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "spigot.yml", "# Spigot Configuration File\nconfig-version: 12\nsettings:\n  bungeecord: false\n");
+            TxtSpigotConfigEditor.Text = spigotCfg.Content;
         }
 
         private void SelectComboByContent(ComboBox combo, string val)
@@ -329,11 +424,12 @@ namespace Zenith_MC_Server
 
         private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
         {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
             _currentProperties.SetProperty("motd", CfgMotd.Text);
             _currentProperties.SetProperty("max-players", CfgMaxPlayers.Text);
             _currentProperties.SetProperty("server-port", CfgServerPort.Text);
-            _currentProperties.SetProperty("view-distance", CfgViewDistance.Text);
-            _currentProperties.SetProperty("simulation-distance", CfgSimulationDistance.Text);
 
             if (CfgGamemode.SelectedItem is ComboBoxItem gmItem)
             {
@@ -346,35 +442,56 @@ namespace Zenith_MC_Server
             }
 
             _currentProperties.SetProperty("online-mode", CfgOnlineMode.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("pvp", CfgPvp.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("white-list", CfgWhitelist.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("enable-command-block", CfgCommandBlocks.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("allow-nether", CfgAllowNether.IsOn.ToString().ToLower());
 
-            _configService.SaveProperties(_serverDirectory, _currentProperties);
-            _configService.SetEulaAccepted(_serverDirectory, ToggleEula.IsOn);
+            _configService.SaveProperties(profile.DirectoryPath, _currentProperties);
+            _configService.SetEulaAccepted(profile.DirectoryPath, ToggleEula.IsOn);
 
             TxtActivePort.Text = $"Puerto: {CfgServerPort.Text}";
             AppendConsoleLog("[Zenith] Configuración guardada en server.properties y eula.txt");
         }
 
+        private void BtnSavePaperConfig_Click(object sender, RoutedEventArgs e)
+        {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            _configService.SaveSpecificConfig(profile.DirectoryPath, "paper-global.yml", TxtPaperConfigEditor.Text);
+            AppendConsoleLog("[Zenith] Guardado paper-global.yml exitosamente.");
+        }
+
+        private void BtnSaveSpigotConfig_Click(object sender, RoutedEventArgs e)
+        {
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            _configService.SaveSpecificConfig(profile.DirectoryPath, "spigot.yml", TxtSpigotConfigEditor.Text);
+            AppendConsoleLog("[Zenith] Guardado spigot.yml exitosamente.");
+        }
+
         private void BtnReloadConfig_Click(object sender, RoutedEventArgs e)
         {
             LoadConfigurationToUI();
+            LoadEngineConfigs();
         }
 
         private void ToggleEula_Toggled(object sender, RoutedEventArgs e)
         {
-            _configService.SetEulaAccepted(_serverDirectory, ToggleEula.IsOn);
+            if (_serverManager.ActiveProfile != null)
+            {
+                _configService.SetEulaAccepted(_serverManager.ActiveProfile.DirectoryPath, ToggleEula.IsOn);
+            }
         }
 
         #endregion
 
-        #region File Manager & Integrated Code Editor
+        #region File Manager & Code Editor
 
         private void RefreshFileList()
         {
-            var files = _fileManager.GetDirectoryContents(_serverDirectory);
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            var files = _fileManager.GetDirectoryContents(profile.DirectoryPath);
             LstFileItems.ItemsSource = files;
         }
 
@@ -416,8 +533,11 @@ namespace Zenith_MC_Server
 
         private void BtnNewFile_Click(object sender, RoutedEventArgs e)
         {
-            string newFileName = $"config_custom_{DateTime.Now:mm ss}.txt";
-            string newFilePath = Path.Combine(_serverDirectory, newFileName);
+            var profile = _serverManager.ActiveProfile;
+            if (profile == null) return;
+
+            string newFileName = $"config_custom_{DateTime.Now:mm_ss}.txt";
+            string newFilePath = Path.Combine(profile.DirectoryPath, newFileName);
             _fileManager.CreateFile(newFilePath, "# Archivo creado desde Zenith MC Server Launcher\n");
             RefreshFileList();
         }

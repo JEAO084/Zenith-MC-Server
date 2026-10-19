@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -8,9 +9,76 @@ using Zenith.Core.Models;
 
 namespace Zenith.Core.Services
 {
+    public class MinecraftVersionInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Type { get; set; } = "release"; // release, snapshot, old_alpha, old_beta
+        public string Url { get; set; } = string.Empty;
+        public DateTime ReleaseTime { get; set; }
+        public int RecommendedJavaVersion { get; set; } = 21;
+    }
+
     public class ServerDownloadService
     {
         private readonly HttpClient _httpClient = new();
+
+        public int GetRecommendedJavaVersion(string mcVersion)
+        {
+            if (string.IsNullOrWhiteSpace(mcVersion)) return 21;
+
+            if (mcVersion.StartsWith("1.20.5") || mcVersion.StartsWith("1.21"))
+                return 21;
+
+            if (mcVersion.StartsWith("1.17") || mcVersion.StartsWith("1.18") || mcVersion.StartsWith("1.19") || mcVersion.StartsWith("1.20"))
+                return 17;
+
+            if (mcVersion.StartsWith("1.13") || mcVersion.StartsWith("1.14") || mcVersion.StartsWith("1.15") || mcVersion.StartsWith("1.16"))
+                return 16;
+
+            return 8;
+        }
+
+        public async Task<List<MinecraftVersionInfo>> GetMojangVersionsAsync(bool includeSnapshots = false)
+        {
+            var versions = new List<MinecraftVersionInfo>();
+            try
+            {
+                string manifestJson = await _httpClient.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
+                using var doc = JsonDocument.Parse(manifestJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("versions", out var versionsArray))
+                {
+                    foreach (var item in versionsArray.EnumerateArray())
+                    {
+                        string id = item.GetProperty("id").GetString() ?? "";
+                        string type = item.GetProperty("type").GetString() ?? "release";
+                        string url = item.GetProperty("url").GetString() ?? "";
+
+                        if (!includeSnapshots && type != "release")
+                            continue;
+
+                        versions.Add(new MinecraftVersionInfo
+                        {
+                            Id = id,
+                            Type = type,
+                            Url = url,
+                            RecommendedJavaVersion = GetRecommendedJavaVersion(id)
+                        });
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback default list if offline
+                versions.Add(new MinecraftVersionInfo { Id = "1.20.4", Type = "release", RecommendedJavaVersion = 21 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.20.2", Type = "release", RecommendedJavaVersion = 17 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.19.4", Type = "release", RecommendedJavaVersion = 17 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.16.5", Type = "release", RecommendedJavaVersion = 8 });
+                versions.Add(new MinecraftVersionInfo { Id = "1.12.2", Type = "release", RecommendedJavaVersion = 8 });
+            }
+
+            return versions;
+        }
 
         public List<ServerJarOption> GetPresetServerJars()
         {
@@ -71,37 +139,40 @@ namespace Zenith.Core.Services
 
         public async Task<string> DownloadServerJarAsync(ServerJarOption jarOption, string destinationFolder, Action<double>? progressCallback = null)
         {
-            if (!Directory.Exists(destinationFolder))
+            return await Task.Run(async () =>
             {
-                Directory.CreateDirectory(destinationFolder);
-            }
-
-            string targetFilePath = Path.Combine(destinationFolder, jarOption.FileName);
-
-            using (var response = await _httpClient.GetAsync(jarOption.DownloadUrl, HttpCompletionOption.ResponseHeadersRead))
-            {
-                response.EnsureSuccessStatusCode();
-                long totalBytes = response.Content.Headers.ContentLength ?? -1L;
-
-                using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                if (!Directory.Exists(destinationFolder))
                 {
-                    byte[] buffer = new byte[8192];
-                    long totalRead = 0;
-                    int read;
-                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    Directory.CreateDirectory(destinationFolder);
+                }
+
+                string targetFilePath = Path.Combine(destinationFolder, jarOption.FileName);
+
+                using (var response = await _httpClient.GetAsync(jarOption.DownloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+                    long totalBytes = response.Content.Headers.ContentLength ?? -1L;
+
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var fileStream = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
                     {
-                        await fileStream.WriteAsync(buffer, 0, read);
-                        totalRead += read;
-                        if (totalBytes > 0)
+                        byte[] buffer = new byte[16384];
+                        long totalRead = 0;
+                        int read;
+                        while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
-                            progressCallback?.Invoke((double)totalRead / totalBytes * 100);
+                            await fileStream.WriteAsync(buffer, 0, read);
+                            totalRead += read;
+                            if (totalBytes > 0)
+                            {
+                                progressCallback?.Invoke((double)totalRead / totalBytes * 100);
+                            }
                         }
                     }
                 }
-            }
 
-            return targetFilePath;
+                return targetFilePath;
+            });
         }
     }
 }

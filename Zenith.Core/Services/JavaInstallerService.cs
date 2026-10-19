@@ -66,7 +66,6 @@ namespace Zenith.Core.Services
 
         public bool CheckSystemJavaInstalled(int majorVersion)
         {
-            // Helper check for system java if available
             string? pathVar = Environment.GetEnvironmentVariable("JAVA_HOME");
             if (!string.IsNullOrEmpty(pathVar) && File.Exists(Path.Combine(pathVar, "bin", "java.exe")))
             {
@@ -77,66 +76,71 @@ namespace Zenith.Core.Services
 
         public async Task<string> DownloadAndExtractJavaAsync(JavaVersionOption option, Action<double>? progressCallback = null)
         {
-            string targetFolder = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}");
-            string zipFile = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}.zip");
-
-            if (File.Exists(Path.Combine(targetFolder, "bin", "java.exe")))
+            return await Task.Run(async () =>
             {
-                option.IsInstalled = true;
-                option.InstalledPath = Path.Combine(targetFolder, "bin", "java.exe");
-                return option.InstalledPath;
-            }
+                string targetFolder = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}");
+                string zipFile = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}.zip");
 
-            using (var response = await _httpClient.GetAsync(option.DownloadUrl, HttpCompletionOption.ResponseHeadersRead))
-            {
-                response.EnsureSuccessStatusCode();
-                long totalBytes = response.Content.Headers.ContentLength ?? -1L;
-
-                using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(zipFile, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                if (File.Exists(Path.Combine(targetFolder, "bin", "java.exe")))
                 {
-                    byte[] buffer = new byte[8192];
-                    long totalRead = 0;
-                    int read;
-                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    option.IsInstalled = true;
+                    option.InstalledPath = Path.Combine(targetFolder, "bin", "java.exe");
+                    return option.InstalledPath;
+                }
+
+                using (var response = await _httpClient.GetAsync(option.DownloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    response.EnsureSuccessStatusCode();
+                    long totalBytes = response.Content.Headers.ContentLength ?? -1L;
+
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var fileStream = new FileStream(zipFile, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
                     {
-                        await fileStream.WriteAsync(buffer, 0, read);
-                        totalRead += read;
-                        if (totalBytes > 0)
+                        byte[] buffer = new byte[16384];
+                        long totalRead = 0;
+                        int read;
+                        while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
-                            progressCallback?.Invoke((double)totalRead / totalBytes * 100);
+                            await fileStream.WriteAsync(buffer, 0, read);
+                            totalRead += read;
+                            if (totalBytes > 0)
+                            {
+                                progressCallback?.Invoke((double)totalRead / totalBytes * 100);
+                            }
                         }
                     }
                 }
-            }
 
-            // Extract archive
-            if (Directory.Exists(targetFolder))
-            {
-                Directory.Delete(targetFolder, true);
-            }
-
-            ZipFile.ExtractToDirectory(zipFile, targetFolder);
-            File.Delete(zipFile);
-
-            // Find bin/java.exe inside extracted subdirectories if nested
-            string executablePath = Path.Combine(targetFolder, "bin", "java.exe");
-            if (!File.Exists(executablePath))
-            {
-                var subdirs = Directory.GetDirectories(targetFolder);
-                if (subdirs.Length > 0)
+                // Extract archive asynchronously
+                if (Directory.Exists(targetFolder))
                 {
-                    string nestedExec = Path.Combine(subdirs[0], "bin", "java.exe");
-                    if (File.Exists(nestedExec))
+                    Directory.Delete(targetFolder, true);
+                }
+
+                ZipFile.ExtractToDirectory(zipFile, targetFolder);
+                if (File.Exists(zipFile))
+                {
+                    File.Delete(zipFile);
+                }
+
+                string executablePath = Path.Combine(targetFolder, "bin", "java.exe");
+                if (!File.Exists(executablePath))
+                {
+                    var subdirs = Directory.GetDirectories(targetFolder);
+                    if (subdirs.Length > 0)
                     {
-                        executablePath = nestedExec;
+                        string nestedExec = Path.Combine(subdirs[0], "bin", "java.exe");
+                        if (File.Exists(nestedExec))
+                        {
+                            executablePath = nestedExec;
+                        }
                     }
                 }
-            }
 
-            option.IsInstalled = true;
-            option.InstalledPath = executablePath;
-            return executablePath;
+                option.IsInstalled = true;
+                option.InstalledPath = executablePath;
+                return executablePath;
+            });
         }
     }
 }
