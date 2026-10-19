@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Zenith MC Server (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Zenith MC Server (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
