@@ -24,7 +24,6 @@ namespace Zenith_MC_Server
 
         private ServerPropertiesConfig _currentProperties;
         private ServerFileItem? _selectedFileItem;
-        private List<MinecraftVersionInfo> _allMojangVersions = new();
         private List<MinecraftVersionInfo> _wizardMojangVersions = new();
 
         public MainWindow()
@@ -50,8 +49,7 @@ namespace Zenith_MC_Server
             LoadActiveServerUI();
             UpdateStatusIndicator(false);
 
-            // Fetch Mojang versions in background
-            _ = LoadMojangVersionsAsync();
+            // Fetch Mojang versions for wizard
             _ = LoadWizardVersionsAsync();
         }
 
@@ -105,6 +103,7 @@ namespace Zenith_MC_Server
 
         private void WzdCmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_downloadService == null) return;
             if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
             {
                 var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
@@ -122,7 +121,6 @@ namespace Zenith_MC_Server
                     WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} no detectado. Se descargará e instalará automáticamente.";
                 }
 
-                // Update loader compatibility
                 var loaders = _downloadService.GetCompatibleLoadersForVersion(ver.Id);
                 WzdCmbLoader.ItemsSource = loaders;
                 if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
@@ -133,78 +131,104 @@ namespace Zenith_MC_Server
         {
             if (_serverManager == null || _downloadService == null) return;
 
-            string name = WzdServerName.Text.Trim();
-            if (string.IsNullOrWhiteSpace(name)) name = "Nuevo Servidor";
+            // Prevent double-click creation
+            BtnFinishWizard.IsEnabled = false;
+            BtnFinishWizard.Content = "⏳ Creando Servidor e Instalando Archivos...";
+            WzdProgressBar.Visibility = Visibility.Visible;
 
-            string icon = "⛏️";
-            if (WzdServerIcon.SelectedItem is ComboBoxItem iconItem)
+            try
             {
-                icon = iconItem.Content.ToString() ?? "⛏️";
-            }
+                string name = WzdServerName.Text.Trim();
+                if (string.IsNullOrWhiteSpace(name)) name = "Nuevo Servidor";
 
-            string version = "1.20.4";
-            if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
-            {
-                version = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
-            }
-
-            string loader = "Paper";
-            if (WzdCmbLoader.SelectedItem != null)
-            {
-                loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
-            }
-
-            int ramGb = 4;
-            if (WzdCmbRam.SelectedItem is ComboBoxItem ramItem)
-            {
-                int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
-            }
-
-            int port = 25565;
-            int.TryParse(WzdTxtPort.Text.Trim(), out port);
-
-            // 1. Create Profile
-            var newProfile = _serverManager.CreateProfile($"{icon} {name}", loader, version, ramGb);
-
-            // 2. Set Aikar's Flags
-            if (WzdToggleAikarsFlags.IsOn)
-            {
-                newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
-            }
-
-            // 3. Set Java Runtime
-            int reqJava = _downloadService.GetRecommendedJavaVersion(version);
-            var javaVerOption = _javaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
-            if (javaVerOption != null)
-            {
-                if (File.Exists(javaVerOption.InstalledPath))
+                string icon = "⛏️";
+                if (WzdServerIcon.SelectedItem is ComboBoxItem iconItem)
                 {
-                    newProfile.JavaExecutablePath = javaVerOption.InstalledPath;
+                    icon = iconItem.Content.ToString()?.Split(' ')[0] ?? "⛏️";
                 }
-                else
+
+                string version = "1.20.4";
+                if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
                 {
-                    try
+                    version = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
+                }
+
+                string loader = "Paper";
+                if (WzdCmbLoader.SelectedItem != null)
+                {
+                    loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
+                }
+
+                int ramGb = 4;
+                if (WzdCmbRam.SelectedItem is ComboBoxItem ramItem)
+                {
+                    int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
+                }
+
+                int port = 25565;
+                int.TryParse(WzdTxtPort.Text.Trim(), out port);
+
+                // 1. Create Server Instance Profile
+                string displayName = $"{icon} {name}";
+                var newProfile = _serverManager.CreateProfile(displayName, loader, version, ramGb);
+
+                // 2. Automatically download server.jar matching loader & version
+                WzdTxtProgressStatus.Text = $"Descargando {loader} {version} (server.jar)...";
+                string downloadedJarPath = await _downloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
+                {
+                    DispatcherQueue.TryEnqueue(() => WzdProgressBar.Value = p);
+                });
+
+                newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
+
+                // 3. Set Aikar's Flags
+                if (WzdToggleAikarsFlags.IsOn)
+                {
+                    newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
+                }
+
+                // 4. Download/Verify Java Runtime
+                int reqJava = _downloadService.GetRecommendedJavaVersion(version);
+                var javaVerOption = _javaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
+                if (javaVerOption != null)
+                {
+                    if (File.Exists(javaVerOption.InstalledPath))
                     {
+                        newProfile.JavaExecutablePath = javaVerOption.InstalledPath;
+                    }
+                    else
+                    {
+                        WzdTxtProgressStatus.Text = $"Instalando JDK Java {reqJava}...";
                         string downloadedJavaPath = await _javaService.DownloadAndExtractJavaAsync(javaVerOption);
                         newProfile.JavaExecutablePath = downloadedJavaPath;
                     }
-                    catch { }
                 }
+
+                // 5. Save EULA & Properties
+                _configService.SetEulaAccepted(newProfile.DirectoryPath, WzdToggleEula.IsOn);
+                var props = _configService.LoadProperties(newProfile.DirectoryPath);
+                props.SetProperty("server-port", port.ToString());
+                props.SetProperty("motd", $"{name} - Servidor Minecraft");
+                _configService.SaveProperties(newProfile.DirectoryPath, props);
+
+                _serverManager.UpdateProfile(newProfile);
+                RefreshServerProfilesUI();
+                LoadActiveServerUI();
+
+                AppendConsoleLog($"[Zenith Wizard] ¡Servidor '{newProfile.Name}' creado exitosamente con {loader} {version} y Java {reqJava}!");
+                SwitchToView("Dashboard");
             }
-
-            // 4. Set EULA & Port
-            _configService.SetEulaAccepted(newProfile.DirectoryPath, WzdToggleEula.IsOn);
-            var props = _configService.LoadProperties(newProfile.DirectoryPath);
-            props.SetProperty("server-port", port.ToString());
-            props.SetProperty("motd", $"{name} - Servidor Minecraft");
-            _configService.SaveProperties(newProfile.DirectoryPath, props);
-
-            _serverManager.UpdateProfile(newProfile);
-            RefreshServerProfilesUI();
-            LoadActiveServerUI();
-
-            AppendConsoleLog($"[Zenith Wizard] ¡Servidor '{newProfile.Name}' creado exitosamente con Java {reqJava}!");
-            SwitchToView("Dashboard");
+            catch (Exception ex)
+            {
+                AppendConsoleLog($"[Zenith Wizard Error] {ex.Message}");
+            }
+            finally
+            {
+                BtnFinishWizard.IsEnabled = true;
+                BtnFinishWizard.Content = "🚀 Finalizar y Crear Servidor";
+                WzdProgressBar.Visibility = Visibility.Collapsed;
+                WzdTxtProgressStatus.Text = string.Empty;
+            }
         }
 
         private void BtnCreateServerProfile_Click(object sender, RoutedEventArgs e)
@@ -243,7 +267,6 @@ namespace Zenith_MC_Server
         {
             ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
             ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
-            ViewDownloads.Visibility = tag == "Downloads" ? Visibility.Visible : Visibility.Collapsed;
             ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
             ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -299,7 +322,7 @@ namespace Zenith_MC_Server
                 var jarFiles = Directory.GetFiles(serverDir, "*.jar");
                 if (jarFiles.Length == 0)
                 {
-                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo. Ve a 'Descargas' para instalar Paper, Spigot o Vanilla.");
+                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo. Usa el 'Asistente de Creación' para descargar e instalar el servidor.");
                     return;
                 }
 
@@ -398,121 +421,6 @@ namespace Zenith_MC_Server
         {
             TxtConsoleLog.Text += $"{message}\n";
             ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null);
-        }
-
-        #endregion
-
-        #region Asynchronous Downloads & Versions
-
-        private async Task LoadMojangVersionsAsync()
-        {
-            if (_downloadService == null) return;
-            bool showSnapshots = ChkIncludeSnapshots.IsChecked == true;
-            _allMojangVersions = await _downloadService.GetMojangVersionsAsync(showSnapshots);
-
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                CmbMojangVersions.ItemsSource = _allMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
-                if (CmbMojangVersions.Items.Count > 0)
-                {
-                    CmbMojangVersions.SelectedIndex = 0;
-                }
-            });
-        }
-
-        private async void BtnFetchMojangVersions_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadMojangVersionsAsync();
-        }
-
-        private async void ChkIncludeSnapshots_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            await LoadMojangVersionsAsync();
-        }
-
-        private void CmbMojangVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbMojangVersions.SelectedIndex >= 0 && CmbMojangVersions.SelectedIndex < _allMojangVersions.Count)
-            {
-                var selectedVersion = _allMojangVersions[CmbMojangVersions.SelectedIndex];
-                TxtRecommendedJavaNotice.Text = $"Versión recomendada para Minecraft {selectedVersion.Id}: Java {selectedVersion.RecommendedJavaVersion}";
-            }
-        }
-
-        private async void BtnDownloadJava21_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(21);
-        private async void BtnDownloadJava17_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(17);
-        private async void BtnDownloadJava8_Click(object sender, RoutedEventArgs e) => await HandleJavaDownloadAsync(8);
-
-        private async Task HandleJavaDownloadAsync(int majorVersion)
-        {
-            if (_javaService == null) return;
-            var versions = _javaService.GetAvailableJavaVersions();
-            var target = versions.FirstOrDefault(v => v.MajorVersion == majorVersion);
-            if (target != null)
-            {
-                GlobalDownloadProgressPanel.Visibility = Visibility.Visible;
-                TxtDownloadStatus.Text = $"Descargando e instalando JDK {majorVersion} de forma asíncrona...";
-
-                try
-                {
-                    string path = await _javaService.DownloadAndExtractJavaAsync(target, p =>
-                    {
-                        DispatcherQueue.TryEnqueue(() => DownloadProgressBar.Value = p);
-                    });
-
-                    TxtDownloadStatus.Text = $"¡Java {majorVersion} instalado exitosamente en: {path}!";
-                }
-                catch (Exception ex)
-                {
-                    TxtDownloadStatus.Text = $"Error al descargar Java: {ex.Message}";
-                }
-                finally
-                {
-                    GlobalDownloadProgressPanel.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private async void BtnInstallPaper_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Paper);
-        private async void BtnInstallPurpur_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Purpur);
-        private async void BtnInstallVanilla_Click(object sender, RoutedEventArgs e) => await HandleJarDownloadAsync(ServerSoftwareType.Vanilla);
-
-        private async Task HandleJarDownloadAsync(ServerSoftwareType type)
-        {
-            if (_serverManager == null || _downloadService == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            var presets = _downloadService.GetPresetServerJars();
-            var target = presets.FirstOrDefault(j => j.SoftwareType == type);
-            if (target != null)
-            {
-                GlobalDownloadProgressPanel.Visibility = Visibility.Visible;
-                TxtDownloadStatus.Text = $"Descargando {target.FileName}...";
-
-                try
-                {
-                    string path = await _downloadService.DownloadServerJarAsync(target, profile.DirectoryPath, p =>
-                    {
-                        DispatcherQueue.TryEnqueue(() => DownloadProgressBar.Value = p);
-                    });
-
-                    TxtDownloadStatus.Text = $"¡Server JAR ({target.FileName}) instalado exitosamente en {profile.Name}!";
-                    profile.JarFileName = target.FileName;
-                    _serverManager.UpdateProfile(profile);
-
-                    TxtActiveSoftware.Text = $"Motor: {target.FileName}";
-                    RefreshFileList();
-                }
-                catch (Exception ex)
-                {
-                    TxtDownloadStatus.Text = $"Error al descargar JAR: {ex.Message}";
-                }
-                finally
-                {
-                    GlobalDownloadProgressPanel.Visibility = Visibility.Collapsed;
-                }
-            }
         }
 
         #endregion
