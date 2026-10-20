@@ -571,11 +571,13 @@
 
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
                         <TextBlock Text="Catálogo de Descarga de Plugins (Spigot, Modrinth, Bukkit, CurseForge)" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="160"/>
                                 <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="140"/>
                             </Grid.ColumnDefinitions>
 
                             <ComboBox x:Name="CmbPluginSource" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbPluginSource_SelectionChanged">
@@ -586,9 +588,27 @@
                                 <ComboBoxItem Content="CurseForge"/>
                             </ComboBox>
 
-                            <TextBox Grid.Column="1" x:Name="TxtPluginSearch" PlaceholderText="Buscar plugins por nombre o descripción..." TextChanged="TxtPluginSearch_TextChanged"/>
+                            <ComboBox Grid.Column="1" x:Name="CmbPluginVersionFilter" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbPluginVersionFilter_SelectionChanged">
+                                <ComboBoxItem Content="Todas las Versiones"/>
+                                <ComboBoxItem Content="1.20.4"/>
+                                <ComboBoxItem Content="1.20.2"/>
+                                <ComboBoxItem Content="1.19.4"/>
+                                <ComboBoxItem Content="1.18.2"/>
+                                <ComboBoxItem Content="1.16.5"/>
+                                <ComboBoxItem Content="1.12.2"/>
+                            </ComboBox>
 
-                            <ComboBox Grid.Column="2" x:Name="CmbPluginSort" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbPluginSort_SelectionChanged">
+                            <ComboBox Grid.Column="2" x:Name="CmbPluginCategoryFilter" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbPluginCategoryFilter_SelectionChanged">
+                                <ComboBoxItem Content="Todas las Categorías"/>
+                                <ComboBoxItem Content="Administración"/>
+                                <ComboBoxItem Content="Utilidades"/>
+                                <ComboBoxItem Content="Juegos"/>
+                                <ComboBoxItem Content="Rendimiento"/>
+                            </ComboBox>
+
+                            <TextBox Grid.Column="3" x:Name="TxtPluginSearch" PlaceholderText="Buscar plugins por nombre o descripción..." TextChanged="TxtPluginSearch_TextChanged"/>
+
+                            <ComboBox Grid.Column="4" x:Name="CmbPluginSort" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbPluginSort_SelectionChanged">
                                 <ComboBoxItem Content="Más Descargados"/>
                                 <ComboBoxItem Content="Nombre (A-Z)"/>
                             </ComboBox>
@@ -638,11 +658,13 @@
 
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
                         <TextBlock Text="Catálogo de Descarga de Mods (Modrinth, CurseForge)" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="160"/>
                                 <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="140"/>
                             </Grid.ColumnDefinitions>
 
                             <ComboBox x:Name="CmbModSource" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbModSource_SelectionChanged">
@@ -651,9 +673,24 @@
                                 <ComboBoxItem Content="CurseForge"/>
                             </ComboBox>
 
-                            <TextBox Grid.Column="1" x:Name="TxtModSearch" PlaceholderText="Buscar mods por nombre o palabras clave..." TextChanged="TxtModSearch_TextChanged"/>
+                            <ComboBox Grid.Column="1" x:Name="CmbModVersionFilter" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbModVersionFilter_SelectionChanged">
+                                <ComboBoxItem Content="Todas las Versiones"/>
+                                <ComboBoxItem Content="1.20.4"/>
+                                <ComboBoxItem Content="1.20.2"/>
+                                <ComboBoxItem Content="1.19.4"/>
+                                <ComboBoxItem Content="1.18.2"/>
+                            </ComboBox>
 
-                            <ComboBox Grid.Column="2" x:Name="CmbModSort" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbModSort_SelectionChanged">
+                            <ComboBox Grid.Column="2" x:Name="CmbModCategoryFilter" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbModCategoryFilter_SelectionChanged">
+                                <ComboBoxItem Content="Todas las Categorías"/>
+                                <ComboBoxItem Content="Rendimiento"/>
+                                <ComboBoxItem Content="Utilidades"/>
+                                <ComboBoxItem Content="Gráficos"/>
+                            </ComboBox>
+
+                            <TextBox Grid.Column="3" x:Name="TxtModSearch" PlaceholderText="Buscar mods por nombre o palabras clave..." TextChanged="TxtModSearch_TextChanged"/>
+
+                            <ComboBox Grid.Column="4" x:Name="CmbModSort" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbModSort_SelectionChanged">
                                 <ComboBoxItem Content="Más Descargados"/>
                                 <ComboBoxItem Content="Nombre (A-Z)"/>
                             </ComboBox>
@@ -837,10 +874,10 @@
                     </Border>
                 </Grid>
 
-                <!-- 9. FILE MANAGER & CODE EDITOR VIEW -->
+                <!-- 9. FILE MANAGER & CODE EDITOR VIEW (UPGRADED TO TREEVIEW) -->
                 <Grid x:Name="ViewFileManager" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="320"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -853,11 +890,21 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,8">
-                                <TextBlock Text="Archivos del Servidor" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                                <Button Content="↻ Actualizar Lista" Click="BtnRefreshFiles_Click" HorizontalAlignment="Stretch" CornerRadius="6"/>
+                                <TextBlock Text="Explorador de Archivos (Jerárquico)" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
+                                <Button Content="↻ Actualizar Árbol" Click="BtnRefreshFiles_Click" HorizontalAlignment="Stretch" CornerRadius="6"/>
                             </StackPanel>
 
-                            <ListView Grid.Row="1" x:Name="LstFileItems" SelectionChanged="LstFileItems_SelectionChanged" DisplayMemberPath="Name"/>
+                            <!-- Hierarchical TreeView -->
+                            <TreeView Grid.Row="1" x:Name="TreeFileExplorer" ItemInvoked="TreeFileExplorer_ItemInvoked">
+                                <TreeView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" Foreground="#FFFFFF"/>
+                                            <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
 
                             <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,0">
                                 <Button Content="+ Nuevo Archivo" Click="BtnNewFile_Click" HorizontalAlignment="Stretch" CornerRadius="6"/>
@@ -890,7 +937,7 @@
 
                             <TextBox Grid.Row="1" x:Name="TxtCodeEditor" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas, Courier New" FontSize="13" Background="#120D18" Foreground="#E2E8F0" BorderThickness="1" BorderBrush="#33FFFFFF"/>
 
-                            <TextBlock Grid.Row="2" x:Name="TxtFileEditorStatus" Text="Selecciona un archivo para editar su contenido directamente desde el launcher." FontSize="11" Foreground="#AAAAAA" Margin="0,8,0,0"/>
+                            <TextBlock Grid.Row="2" x:Name="TxtFileEditorStatus" Text="Selecciona un archivo del árbol para editar su contenido directamente desde el launcher." FontSize="11" Foreground="#AAAAAA" Margin="0,8,0,0"/>
                         </Grid>
                     </Border>
                 </Grid>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Zenith.Core.Models;
 
@@ -12,43 +13,103 @@ namespace Zenith.Core.Services
     {
         private readonly HttpClient _httpClient = new();
 
-        public List<MarketplaceItem> GetFeaturedItems(MarketplaceCategory category, string mcVersion, string loader, string sourceName = "Modrinth", string searchQuery = "", string sortBy = "Downloads")
+        public List<MarketplaceItem> GetFeaturedItems(
+            MarketplaceCategory category,
+            string mcVersion = "",
+            string loader = "",
+            string sourceName = "Todas",
+            string searchQuery = "",
+            string sortBy = "Downloads",
+            string subCategoryFilter = "Todas",
+            string overrideVersionFilter = "Todas")
         {
             var allItems = GetSampleCatalog();
 
             var filtered = allItems.Where(i => i.Category == category).ToList();
 
-            if (!string.IsNullOrWhiteSpace(sourceName) && !sourceName.Equals("Todas", StringComparison.OrdinalIgnoreCase))
+            // 1. Filter by Source
+            if (!string.IsNullOrWhiteSpace(sourceName) && !sourceName.StartsWith("Todas", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = filtered.Where(i => i.SourceName.Equals(sourceName, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
-            if (!string.IsNullOrWhiteSpace(mcVersion))
+            // 2. Filter by SubCategory (e.g. Rendimiento, Administración, Utilidades)
+            if (!string.IsNullOrWhiteSpace(subCategoryFilter) && !subCategoryFilter.StartsWith("Todas", StringComparison.OrdinalIgnoreCase))
             {
-                filtered = filtered.Where(i => i.CompatibleVersions.Count == 0 || i.CompatibleVersions.Any(v => v.Contains(mcVersion) || mcVersion.Contains(v))).ToList();
+                filtered = filtered.Where(i => i.SubCategory.Equals(subCategoryFilter, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
-            if (!string.IsNullOrWhiteSpace(loader))
+            // 3. Filter by Version (if overrideVersionFilter is specified and not "Todas", use it; otherwise soft match active server version)
+            string targetVer = !string.IsNullOrWhiteSpace(overrideVersionFilter) && !overrideVersionFilter.StartsWith("Todas", StringComparison.OrdinalIgnoreCase)
+                ? overrideVersionFilter
+                : CleanVersionNumber(mcVersion);
+
+            if (!string.IsNullOrWhiteSpace(targetVer))
             {
-                filtered = filtered.Where(i => i.CompatibleLoaders.Count == 0 || i.CompatibleLoaders.Any(l => l.Equals(loader, StringComparison.OrdinalIgnoreCase) || loader.Contains(l, StringComparison.OrdinalIgnoreCase))).ToList();
+                var verMatches = filtered.Where(i => i.CompatibleVersions.Count == 0 || i.CompatibleVersions.Any(v => v.Contains(targetVer) || targetVer.Contains(v))).ToList();
+                // Soft fallback: if strict version filtering yields 0 results, keep the catalog visible so search isn't empty!
+                if (verMatches.Count > 0)
+                {
+                    filtered = verMatches;
+                }
             }
 
+            // 4. Filter by Loader
+            string cleanLoader = CleanLoaderName(loader);
+            if (!string.IsNullOrWhiteSpace(cleanLoader))
+            {
+                var loaderMatches = filtered.Where(i => i.CompatibleLoaders.Count == 0 || i.CompatibleLoaders.Any(l => l.Equals(cleanLoader, StringComparison.OrdinalIgnoreCase) || cleanLoader.Contains(l, StringComparison.OrdinalIgnoreCase))).ToList();
+                if (loaderMatches.Count > 0)
+                {
+                    filtered = loaderMatches;
+                }
+            }
+
+            // 5. Search Query
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
                 string q = searchQuery.ToLowerInvariant();
-                filtered = filtered.Where(i => i.Title.ToLowerInvariant().Contains(q) || i.Summary.ToLowerInvariant().Contains(q) || i.Author.ToLowerInvariant().Contains(q)).ToList();
+                filtered = filtered.Where(i => i.Title.ToLowerInvariant().Contains(q) ||
+                                               i.Summary.ToLowerInvariant().Contains(q) ||
+                                               i.Author.ToLowerInvariant().Contains(q) ||
+                                               i.SubCategory.ToLowerInvariant().Contains(q)).ToList();
             }
 
-            if (sortBy.Equals("Downloads", StringComparison.OrdinalIgnoreCase))
-            {
-                filtered = filtered.OrderByDescending(i => i.DownloadsCount).ToList();
-            }
-            else if (sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
+            // 6. Sorting
+            if (sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = filtered.OrderBy(i => i.Title).ToList();
             }
+            else
+            {
+                filtered = filtered.OrderByDescending(i => i.DownloadsCount).ToList();
+            }
 
             return filtered;
+        }
+
+        private static string CleanVersionNumber(string rawVersion)
+        {
+            if (string.IsNullOrWhiteSpace(rawVersion)) return string.Empty;
+
+            // Extract core version numbers e.g. "1.20.4" from "1.20.4 [RELEASE]" or "1.20.4-496"
+            var match = Regex.Match(rawVersion, @"\d+\.\d+(\.\d+)?");
+            return match.Success ? match.Value : rawVersion.Split(' ')[0].Trim();
+        }
+
+        private static string CleanLoaderName(string rawLoader)
+        {
+            if (string.IsNullOrWhiteSpace(rawLoader)) return string.Empty;
+
+            string clean = rawLoader.Split(' ')[0].Trim();
+            if (clean.Contains("Paper", StringComparison.OrdinalIgnoreCase)) return "Paper";
+            if (clean.Contains("Purpur", StringComparison.OrdinalIgnoreCase)) return "Purpur";
+            if (clean.Contains("Spigot", StringComparison.OrdinalIgnoreCase)) return "Spigot";
+            if (clean.Contains("Fabric", StringComparison.OrdinalIgnoreCase)) return "Fabric";
+            if (clean.Contains("Forge", StringComparison.OrdinalIgnoreCase)) return "Forge";
+            if (clean.Contains("Vanilla", StringComparison.OrdinalIgnoreCase)) return "Vanilla";
+
+            return clean;
         }
 
         public async Task<string> DownloadAndInstallItemAsync(MarketplaceItem item, string serverDir)
@@ -73,7 +134,7 @@ namespace Zenith.Core.Services
             else
             {
                 // Create local jar placeholder
-                await File.WriteAllTextAsync(targetFilePath, $"// Sample Jar for {item.Title}");
+                await File.WriteAllTextAsync(targetFilePath, $"// Jar Binary Placeholder for {item.Title}");
             }
 
             return targetFilePath;
@@ -93,6 +154,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 28500000,
                     SourceName = "Spigot",
                     Category = MarketplaceCategory.Plugin,
+                    SubCategory = "Administración",
                     JarFileName = "EssentialsX-2.20.1.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4", "1.18.2" },
                     CompatibleLoaders = new() { "Paper", "Spigot", "Purpur" }
@@ -106,6 +168,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 42000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Plugin,
+                    SubCategory = "Utilidades",
                     JarFileName = "worldedit-bukkit-7.2.18.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4" },
                     CompatibleLoaders = new() { "Paper", "Spigot", "Purpur", "Fabric" }
@@ -119,6 +182,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 35000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Plugin,
+                    SubCategory = "Administración",
                     JarFileName = "LuckPerms-Bukkit-5.4.102.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4", "1.16.5" },
                     CompatibleLoaders = new() { "Paper", "Spigot", "Purpur", "Fabric" }
@@ -132,19 +196,21 @@ namespace Zenith.Core.Services
                     DownloadsCount = 19000000,
                     SourceName = "Bukkit",
                     Category = MarketplaceCategory.Plugin,
+                    SubCategory = "Utilidades",
                     JarFileName = "Vault-1.7.3.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4" },
                     CompatibleLoaders = new() { "Paper", "Spigot", "Purpur" }
                 },
                 new MarketplaceItem
                 {
-                    Title = "Vault & Citizens",
+                    Title = "Citizens",
                     Author = "fullserver",
                     Summary = "Crea NPCs interactivos que otorgan misiones, tiendas e interacciones visuales.",
                     Description = "Citizens permite colocar aldeanos y personajes no jugadores personalizables que responden a clics de jugadores.",
                     DownloadsCount = 12000000,
                     SourceName = "CurseForge",
                     Category = MarketplaceCategory.Plugin,
+                    SubCategory = "Juegos",
                     JarFileName = "Citizens-2.0.33.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2" },
                     CompatibleLoaders = new() { "Paper", "Spigot", "Purpur" }
@@ -160,6 +226,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 48000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Mod,
+                    SubCategory = "Rendimiento",
                     JarFileName = "sodium-fabric-0.5.8+mc1.20.4.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4" },
                     CompatibleLoaders = new() { "Fabric" }
@@ -173,6 +240,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 31000000,
                     SourceName = "CurseForge",
                     Category = MarketplaceCategory.Mod,
+                    SubCategory = "Rendimiento",
                     JarFileName = "lithium-fabric-mc1.20.4-0.12.1.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2" },
                     CompatibleLoaders = new() { "Fabric" }
@@ -186,6 +254,7 @@ namespace Zenith.Core.Services
                     DownloadsCount = 22000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Mod,
+                    SubCategory = "Rendimiento",
                     JarFileName = "ferritecore-6.0.1-fabric.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2" },
                     CompatibleLoaders = new() { "Fabric", "Forge" }

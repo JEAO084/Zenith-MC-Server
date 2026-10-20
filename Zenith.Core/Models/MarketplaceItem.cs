@@ -21,6 +21,7 @@ namespace Zenith.Core.Models
         public long DownloadsCount { get; set; }
         public string SourceName { get; set; } = "Modrinth"; // Modrinth, Spigot, Bukkit, CurseForge
         public MarketplaceCategory Category { get; set; } = MarketplaceCategory.Plugin;
+        public string SubCategory { get; set; } = "Utilidades"; // Rendimiento, Administración, Utilidades, Gráficos, Juegos
         public string DownloadUrl { get; set; } = string.Empty;
         public string JarFileName { get; set; } = string.Empty;
         public List<string> CompatibleVersions { get; set; } = new();

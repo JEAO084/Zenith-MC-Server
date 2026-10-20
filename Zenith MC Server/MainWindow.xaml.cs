@@ -27,7 +27,7 @@ namespace Zenith_MC_Server
         private readonly MarketplaceService _marketplaceService;
 
         private ServerPropertiesConfig _currentProperties;
-        private ServerFileItem? _selectedFileItem;
+        private FileTreeNode? _selectedFileTreeNode;
         private MarketplaceItem? _selectedMarketplaceItem;
         private List<MinecraftVersionInfo> _wizardMojangVersions = new();
 
@@ -718,34 +718,44 @@ namespace Zenith_MC_Server
         private void RefreshMarketplacePluginCatalog()
         {
             if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadPlugins == null) return;
-            string ver = _serverManager.ActiveProfile.Version;
+            string ver = (CmbPluginVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
+            if (ver == "Todas las Versiones") ver = _serverManager.ActiveProfile.Version;
+
+            string category = (CmbPluginCategoryFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Categorías";
             string loader = _serverManager.ActiveProfile.SoftwareType;
             string source = (CmbPluginSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
             string search = TxtPluginSearch?.Text ?? "";
             string sort = (CmbPluginSort != null && CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Plugin, ver, loader, source, search, sort);
+            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category);
             GrdDownloadPlugins.ItemsSource = items;
         }
 
         private void RefreshMarketplaceModCatalog()
         {
             if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadMods == null) return;
-            string ver = _serverManager.ActiveProfile.Version;
+            string ver = (CmbModVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
+            if (ver == "Todas las Versiones") ver = _serverManager.ActiveProfile.Version;
+
+            string category = (CmbModCategoryFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Categorías";
             string loader = _serverManager.ActiveProfile.SoftwareType;
             string source = (CmbModSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
             string search = TxtModSearch?.Text ?? "";
             string sort = (CmbModSort != null && CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Mod, ver, loader, source, search, sort);
+            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Mod, ver, loader, source, search, sort, category);
             GrdDownloadMods.ItemsSource = items;
         }
 
         private void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+        private void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+        private void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
         private void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplacePluginCatalog();
         private void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
 
         private void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
+        private void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
+        private void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
         private void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplaceModCatalog();
         private void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
 
@@ -926,7 +936,7 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region File Manager & Code Editor
+        #region File Manager & Code Editor (TreeView Edition)
 
         private bool IsPluginMode()
         {
@@ -937,12 +947,17 @@ namespace Zenith_MC_Server
 
         private void RefreshFileList()
         {
-            if (_serverManager == null || _fileManager == null || LstFileItems == null) return;
+            if (_serverManager == null || TreeFileExplorer == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
-            var files = _fileManager.GetDirectoryContents(profile.DirectoryPath);
-            LstFileItems.ItemsSource = files;
+            if (!Directory.Exists(profile.DirectoryPath))
+            {
+                Directory.CreateDirectory(profile.DirectoryPath);
+            }
+
+            var treeRoot = FileTreeNode.BuildTree(profile.DirectoryPath);
+            TreeFileExplorer.ItemsSource = new List<FileTreeNode> { treeRoot };
         }
 
         private void BtnRefreshFiles_Click(object sender, RoutedEventArgs e)
@@ -950,33 +965,31 @@ namespace Zenith_MC_Server
             RefreshFileList();
         }
 
-        private void LstFileItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void TreeFileExplorer_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (_fileManager == null || LstFileItems == null) return;
-            if (LstFileItems.SelectedItem is ServerFileItem item)
-            {
-                _selectedFileItem = item;
-                if (TxtEditingFileName != null) TxtEditingFileName.Text = item.Name;
+            if (_fileManager == null || args.InvokedItem is not FileTreeNode node) return;
 
-                if (!item.IsDirectory)
-                {
-                    string content = _fileManager.ReadFileText(item.FullPath);
-                    if (TxtCodeEditor != null) TxtCodeEditor.Text = content;
-                    if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Editando: {item.RelativePath} ({item.FormattedSize})";
-                }
-                else
-                {
-                    if (TxtCodeEditor != null) TxtCodeEditor.Text = "// [Carpeta seleccionada]";
-                    if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta: {item.RelativePath}";
-                }
+            _selectedFileTreeNode = node;
+            if (TxtEditingFileName != null) TxtEditingFileName.Text = node.Name;
+
+            if (!node.IsDirectory)
+            {
+                string content = _fileManager.ReadFileText(node.FullPath);
+                if (TxtCodeEditor != null) TxtCodeEditor.Text = content;
+                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Editando: {node.RelativePath} ({node.FormattedSize})";
+            }
+            else
+            {
+                if (TxtCodeEditor != null) TxtCodeEditor.Text = "// [Carpeta seleccionada]";
+                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta: {node.RelativePath}";
             }
         }
 
         private void BtnSaveFileContent_Click(object sender, RoutedEventArgs e)
         {
-            if (_fileManager != null && _selectedFileItem != null && !_selectedFileItem.IsDirectory && TxtCodeEditor != null)
+            if (_fileManager != null && _selectedFileTreeNode != null && !_selectedFileTreeNode.IsDirectory && TxtCodeEditor != null)
             {
-                _fileManager.SaveFileText(_selectedFileItem.FullPath, TxtCodeEditor.Text);
+                _fileManager.SaveFileText(_selectedFileTreeNode.FullPath, TxtCodeEditor.Text);
                 if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"¡Guardado exitosamente a las {DateTime.Now:HH:mm:ss}!";
                 RefreshFileList();
             }
@@ -988,20 +1001,26 @@ namespace Zenith_MC_Server
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
+            string targetDir = profile.DirectoryPath;
+            if (_selectedFileTreeNode != null)
+            {
+                targetDir = _selectedFileTreeNode.IsDirectory ? _selectedFileTreeNode.FullPath : Path.GetDirectoryName(_selectedFileTreeNode.FullPath) ?? profile.DirectoryPath;
+            }
+
             string newFileName = $"config_custom_{DateTime.Now:mm_ss}.txt";
-            string newFilePath = Path.Combine(profile.DirectoryPath, newFileName);
+            string newFilePath = Path.Combine(targetDir, newFileName);
             _fileManager.CreateFile(newFilePath, "# Archivo creado desde Zenith MC Server Launcher\n");
             RefreshFileList();
         }
 
         private void BtnDeleteFile_Click(object sender, RoutedEventArgs e)
         {
-            if (_fileManager != null && _selectedFileItem != null)
+            if (_fileManager != null && _selectedFileTreeNode != null)
             {
-                _fileManager.DeleteItem(_selectedFileItem.FullPath);
+                _fileManager.DeleteItem(_selectedFileTreeNode.FullPath);
                 if (TxtCodeEditor != null) TxtCodeEditor.Text = string.Empty;
                 if (TxtEditingFileName != null) TxtEditingFileName.Text = "Ningún archivo seleccionado";
-                _selectedFileItem = null;
+                _selectedFileTreeNode = null;
                 RefreshFileList();
             }
         }
