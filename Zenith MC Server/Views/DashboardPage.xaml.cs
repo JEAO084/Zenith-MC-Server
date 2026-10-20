@@ -51,10 +51,7 @@ namespace Zenith_MC_Server.Views
 
         private void ConsoleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (MainWindow.Current != null)
-            {
-                MainWindow.Current.ContentFrame.Navigate(typeof(ServerConsolePage));
-            }
+            MainWindow.Current?.NavigateTo(typeof(ServerConsolePage));
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -68,10 +65,7 @@ namespace Zenith_MC_Server.Views
 
         private void CreateServer_Click(object sender, RoutedEventArgs e)
         {
-            if (MainWindow.Current != null)
-            {
-                MainWindow.Current.ContentFrame.Navigate(typeof(ServerWizardPage));
-            }
+            MainWindow.Current?.NavigateTo(typeof(ServerWizardPage));
         }
     }
 }

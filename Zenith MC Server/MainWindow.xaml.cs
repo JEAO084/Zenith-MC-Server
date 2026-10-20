@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
 using Zenith_MC_Server.Views;
@@ -48,6 +49,14 @@ namespace Zenith_MC_Server
             ContentFrame.Navigate(typeof(DashboardPage));
         }
 
+        public void NavigateTo(Type pageType)
+        {
+            if (ContentFrame.CurrentSourcePageType != pageType)
+            {
+                ContentFrame.Navigate(pageType);
+            }
+        }
+
         private void AppearanceService_AppearanceChanged()
         {
             DispatcherQueue.TryEnqueue(() =>
@@ -74,14 +83,14 @@ namespace Zenith_MC_Server
                 }
 
                 // Apply Accent Color
-                if (!string.IsNullOrEmpty(AppearanceService.AccentColorHex))
+                if (!string.IsNullOrEmpty(AppearanceService.AccentColorHex) && AppearanceService.AccentColorHex.Length >= 7)
                 {
                     try
                     {
-                        var color = Windows.UI.ColorHelper.FromArgb(255,
-                            Convert.ToByte(AppearanceService.AccentColorHex.Substring(1, 2), 16),
-                            Convert.ToByte(AppearanceService.AccentColorHex.Substring(3, 2), 16),
-                            Convert.ToByte(AppearanceService.AccentColorHex.Substring(5, 2), 16));
+                        byte r = Convert.ToByte(AppearanceService.AccentColorHex.Substring(1, 2), 16);
+                        byte g = Convert.ToByte(AppearanceService.AccentColorHex.Substring(3, 2), 16);
+                        byte b = Convert.ToByte(AppearanceService.AccentColorHex.Substring(5, 2), 16);
+                        var color = Color.FromArgb(255, r, g, b);
 
                         Application.Current.Resources["SystemControlHighlightAccentBrush"] = new SolidColorBrush(color);
                         Application.Current.Resources["AccentFillColorDefaultBrush"] = new SolidColorBrush(color);
@@ -129,10 +138,7 @@ namespace Zenith_MC_Server
                     _ => typeof(DashboardPage)
                 };
 
-                if (ContentFrame.CurrentSourcePageType != pageType)
-                {
-                    ContentFrame.Navigate(pageType);
-                }
+                NavigateTo(pageType);
             }
         }
     }

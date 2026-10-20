@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Parsers;
 
@@ -106,11 +107,14 @@ namespace Zenith_MC_Server.Views
                 var run = new Run { Text = seg.Text };
                 try
                 {
-                    var color = Windows.UI.ColorHelper.FromArgb(255,
-                        Convert.ToByte(seg.ColorHex.Substring(1, 2), 16),
-                        Convert.ToByte(seg.ColorHex.Substring(3, 2), 16),
-                        Convert.ToByte(seg.ColorHex.Substring(5, 2), 16));
-                    run.Foreground = new SolidColorBrush(color);
+                    if (!string.IsNullOrEmpty(seg.ColorHex) && seg.ColorHex.Length >= 7)
+                    {
+                        byte r = Convert.ToByte(seg.ColorHex.Substring(1, 2), 16);
+                        byte g = Convert.ToByte(seg.ColorHex.Substring(3, 2), 16);
+                        byte b = Convert.ToByte(seg.ColorHex.Substring(5, 2), 16);
+                        var color = Color.FromArgb(255, r, g, b);
+                        run.Foreground = new SolidColorBrush(color);
+                    }
                 }
                 catch { }
 

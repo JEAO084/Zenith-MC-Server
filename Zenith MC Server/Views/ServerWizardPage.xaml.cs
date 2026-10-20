@@ -51,7 +51,7 @@ namespace Zenith_MC_Server.Views
             // Download official engine JAR file dynamically
             await MainWindow.Current.EngineService.DownloadEngineJarAsync(engine, version, server.ExecutableJarPath);
 
-            MainWindow.Current.ContentFrame.Navigate(typeof(DashboardPage));
+            MainWindow.Current.NavigateTo(typeof(DashboardPage));
         }
     }
 }

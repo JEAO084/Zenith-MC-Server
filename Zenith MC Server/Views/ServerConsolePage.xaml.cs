@@ -72,7 +72,7 @@ namespace Zenith_MC_Server.Views
             var app = MainWindow.Current;
             if (app == null) return;
 
-            var server = app.ProcessController.CurrentServer ?? app.ServerManager.Servers.Count > 0 ? app.ServerManager.Servers[0] : null;
+            var server = app.ProcessController.CurrentServer ?? (app.ServerManager.Servers.Count > 0 ? app.ServerManager.Servers[0] : null);
             if (server != null)
             {
                 var java = await app.JavaService.EnsureJavaRuntimeAsync(app.JavaService.DetermineRequiredJavaVersion(server.Version));
