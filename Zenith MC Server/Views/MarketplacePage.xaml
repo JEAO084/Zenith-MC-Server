@@ -57,14 +57,20 @@
                                     <Border CornerRadius="4" Padding="6,2" Background="{ThemeResource AccentFillColorDefaultBrush}">
                                         <TextBlock Text="{Binding Category}" Foreground="White" FontSize="11"/>
                                     </Border>
-                                    <TextBlock Text="{Binding LatestVersion, StringFormat='v{0}'}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LatestVersion}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}" VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
 
                                 <StackPanel Orientation="Horizontal" Spacing="16">
-                                    <TextBlock Text="{Binding Author, StringFormat='Autor: {0}'}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                    <TextBlock Text="{Binding Downloads, StringFormat='Descargas: {0:N0}'}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Autor:" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        <TextBlock Text="{Binding Author}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Descargas:" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
 

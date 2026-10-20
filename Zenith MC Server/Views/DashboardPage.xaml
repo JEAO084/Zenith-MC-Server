@@ -43,9 +43,19 @@
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <TextBlock Text="{Binding Version, StringFormat='Versión: {0}'}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                        <TextBlock Text="{Binding Port, StringFormat='Puerto: {0}'}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                        <TextBlock Text="{Binding MemoryMaxMb, StringFormat='RAM Max: {0} MB'}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="Versión:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                            <TextBlock Text="{Binding Version}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="Puerto:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                            <TextBlock Text="{Binding Port}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="RAM Máx:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                            <TextBlock Text="{Binding MemoryMaxMb}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                            <TextBlock Text="MB" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                        </StackPanel>
                                     </StackPanel>
                                 </StackPanel>
 

@@ -30,7 +30,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Previsualización de MOTD (Mensaje del Día)" FontSize="16" FontWeight="SemiBold"/>
-                    <TextBox x:Name="MotdInputBox" Header="Texto MOTD (Soporta códigos &a, &c, &l, §a)" TextChanged="MotdInputBox_TextChanged"/>
+                    <TextBox x:Name="MotdInputBox" Header="Texto MOTD (Soporta códigos &amp;a, &amp;c, &amp;l, §a)" TextChanged="MotdInputBox_TextChanged"/>
                     <Border Background="#121212" CornerRadius="6" Padding="12" Margin="0,4,0,0">
                         <RichTextBlock x:Name="MotdPreviewRichText" FontFamily="Consolas, Cascadia Code" FontSize="14" Foreground="White"/>
                     </Border>

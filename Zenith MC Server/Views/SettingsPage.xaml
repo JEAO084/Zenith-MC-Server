@@ -65,7 +65,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding FilePath}" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CreatedAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding CreatedAt}" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                                     <Button Grid.Column="2" Content="Restaurar" Click="RestoreBackupButton_Click" Tag="{Binding}"/>
                                 </Grid>
                             </DataTemplate>

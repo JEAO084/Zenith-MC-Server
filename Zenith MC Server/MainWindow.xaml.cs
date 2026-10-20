@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
-using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
 using Zenith_MC_Server.Views;
@@ -12,7 +11,7 @@ namespace Zenith_MC_Server
 {
     public sealed partial class MainWindow : Window
     {
-        public static MainWindow? Current { get; private set; }
+        public static new MainWindow? Current { get; private set; }
 
         public ServerManager ServerManager { get; } = new();
         public EngineService EngineService { get; } = new();
@@ -79,7 +78,7 @@ namespace Zenith_MC_Server
                 {
                     try
                     {
-                        var color = ColorHelper.FromArgb(255,
+                        var color = Windows.UI.ColorHelper.FromArgb(255,
                             Convert.ToByte(AppearanceService.AccentColorHex.Substring(1, 2), 16),
                             Convert.ToByte(AppearanceService.AccentColorHex.Substring(3, 2), 16),
                             Convert.ToByte(AppearanceService.AccentColorHex.Substring(5, 2), 16));
