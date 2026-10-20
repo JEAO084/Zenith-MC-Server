@@ -111,30 +111,49 @@ namespace Zenith_MC_Server
 
                 if (choice.Contains("Claro"))
                 {
-                    // Light Theme Mode
+                    // Standard WinUI Light Theme (No Acrylic Backdrop)
+                    if (Content is FrameworkElement rootElement)
+                    {
+                        rootElement.RequestedTheme = ElementTheme.Light;
+                    }
+                    this.SystemBackdrop = null;
+
                     if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 243, 244, 246));
                     if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 229, 231, 235));
                     if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 17, 24, 39));
                     if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 55, 65, 81));
-                    this.SystemBackdrop = null;
+                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = false;
                 }
                 else if (choice.Contains("Transparente"))
                 {
-                    // Transparent Acrylic Glass Mode
+                    // Transparent Dark Theme with 25% Element Opacity (64/255 ~ 25%) + DesktopAcrylicBackdrop
+                    if (Content is FrameworkElement rootElement)
+                    {
+                        rootElement.RequestedTheme = ElementTheme.Dark;
+                    }
                     this.SystemBackdrop = new DesktopAcrylicBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(120, 17, 11, 24));
-                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(160, 26, 16, 36));
+
+                    // 25% opacity background brushes (Alpha = 64 out of 255)
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(64, 17, 11, 24));
+                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(64, 26, 16, 36));
                     if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
                     if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = true;
                 }
                 else
                 {
-                    // Dark Mode (Dark Studio)
-                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
+                    // Standard WinUI Dark Theme (Dark Studio, Solid - No Acrylic Backdrop)
+                    if (Content is FrameworkElement rootElement)
+                    {
+                        rootElement.RequestedTheme = ElementTheme.Dark;
+                    }
+                    this.SystemBackdrop = null;
+
                     if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
                     if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 26, 16, 36));
                     if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
                     if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = false;
                 }
             }
         }
