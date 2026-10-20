@@ -25,6 +25,6 @@ namespace Zenith.Core.Models
         public string JarFileName { get; set; } = string.Empty;
         public List<string> CompatibleVersions { get; set; } = new();
         public List<string> CompatibleLoaders { get; set; } = new();
-        public string FormattedDownloads => DownloadsCount >= 1000000 ? $"{DownloadsCount / 1000000.0:F1}M" : DownloadsCount >= 1000 ? $"{DownloadsCount / 1000.0:F1}k" : DownloadsCount.ToString();
+        public string FormattedDownloads => DownloadsCount >= 1000000 ? $"⬇ {DownloadsCount / 1000000.0:F1}M" : DownloadsCount >= 1000 ? $"⬇ {DownloadsCount / 1000.0:F1}k" : $"⬇ {DownloadsCount}";
     }
 }

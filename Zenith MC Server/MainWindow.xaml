@@ -619,7 +619,7 @@
                                         <TextBlock Grid.Row="1" Text="{Binding Summary}" FontSize="11" Foreground="#CCCCCC" TextWrapping="Wrap" MaxLines="2" Margin="0,6,0,0"/>
 
                                         <Grid Grid.Row="2" Margin="0,6,0,0">
-                                            <TextBlock Text="{Binding FormattedDownloads, StringFormat='⬇ {0}'}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding FormattedDownloads}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
                                             <Button Content="Instalar" Tag="{Binding}" Click="BtnInstallMarketplaceItem_Click" Background="#22C55E" Foreground="White" CornerRadius="6" HorizontalAlignment="Right" Padding="10,2" FontSize="11"/>
                                         </Grid>
                                     </Grid>
@@ -684,7 +684,7 @@
                                         <TextBlock Grid.Row="1" Text="{Binding Summary}" FontSize="11" Foreground="#CCCCCC" TextWrapping="Wrap" MaxLines="2" Margin="0,6,0,0"/>
 
                                         <Grid Grid.Row="2" Margin="0,6,0,0">
-                                            <TextBlock Text="{Binding FormattedDownloads, StringFormat='⬇ {0}'}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding FormattedDownloads}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
                                             <Button Content="Instalar" Tag="{Binding}" Click="BtnInstallMarketplaceItem_Click" Background="#22C55E" Foreground="White" CornerRadius="6" HorizontalAlignment="Right" Padding="10,2" FontSize="11"/>
                                         </Grid>
                                     </Grid>
@@ -919,7 +919,7 @@
                                                         <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#CCCCCC"/>
                                                         <TextBlock Text="{Binding InstalledPath}" FontSize="10" Foreground="#888888"/>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" x:Name="BtnInstallJavaItem" Content="Instalar JDK" Tag="{Binding}" Click="BtnInstallJavaItem_Click" VerticalAlignment="Center" CornerRadius="6"/>
+                                                    <Button Content="Instalar JDK" Tag="{Binding}" Click="BtnInstallJavaItem_Click" VerticalAlignment="Center" CornerRadius="6"/>
                                                 </Grid>
                                             </DataTemplate>
                                         </ListView.ItemTemplate>
