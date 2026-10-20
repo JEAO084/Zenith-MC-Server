@@ -28,29 +28,14 @@
                 <ColumnDefinition Width="160"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <AutoSuggestBox x:Name="SearchBox" PlaceholderText="Buscar plugins o mods (ej. EssentialsX, Sodium, WorldGuard)..."
-                QuerySubmitted="SearchBox_QuerySubmitted"/>
-                <ComboBox x:Name="CategoryComboBox" HorizontalAlignment="Stretch" SelectionChanged="CategoryComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Plugins" IsSelected="True"/>
-                    <ComboBoxItem Content="Mods"/>
-                </ComboBox>
-                <Button Content="Buscar" Style="{StaticResource AccentButtonStyle}" Click="SearchButton_Click"/>
-                <ToggleButton x:Name="ToggleFiltro"/>
-            </StackPanel>
-            <StackPanel x:Name="Filtro" Orientation="Horizontal" Visibility="Collapsed">
-                <ComboBox x:Name="Version"/>
-                <ComboBox x:Name="TagCategoria"/>
-                <ComboBox x:Name="loader" ToolTipService.ToolTip="No se recomienda cambiar"/>
-                <ComboBox x:Name="Ordenar por :"/>
-                <ComboBox x:Name="Intems por pagina"/>
-                <ComboBox x:Name="Tipo de vista">
-                    Cuadrados
-                    Lista
-                </ComboBox>
-            </StackPanel>
 
-            
+            <AutoSuggestBox x:Name="SearchBox" Grid.Column="0" PlaceholderText="Buscar plugins o mods (ej. EssentialsX, Sodium, WorldGuard)..."
+                            QuerySubmitted="SearchBox_QuerySubmitted"/>
+            <ComboBox x:Name="CategoryComboBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="CategoryComboBox_SelectionChanged">
+                <ComboBoxItem Content="Plugins" IsSelected="True"/>
+                <ComboBoxItem Content="Mods"/>
+            </ComboBox>
+            <Button Grid.Column="2" Content="Buscar" Style="{StaticResource AccentButtonStyle}" Click="SearchButton_Click"/>
         </Grid>
 
         <!-- Items Grid / ListView -->

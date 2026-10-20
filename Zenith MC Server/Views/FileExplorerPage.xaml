@@ -27,7 +27,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- File Tree Panel, Mejorar este apartado para permitir explorar todos los archivos dentro de la carpeta del servidor, algo similar al explorador de archivos de windows desde su barra lateral isquierda -->
+            <!-- File Tree Panel -->
             <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
                 <TreeView x:Name="FileTreeView" ItemInvoked="FileTreeView_ItemInvoked">

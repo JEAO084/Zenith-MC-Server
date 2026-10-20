@@ -20,79 +20,19 @@
         </Grid.RowDefinitions>
 
         <!-- Custom Integrated TitleBar -->
-        <TitleBar x:Name="TitleBar"
-                  Background="Transparent"
-                  HorizontalContentAlignment="Center"
-                  Title="Zenith MC Server"
-                  Subtitle="Version 0.1"
-                  IsBackButtonEnabled="True"
-                  IsPaneToggleButtonVisible="True">
-            <TitleBar.Resources>
-                <!-- TitleBar.Content uses Center alignment by default. Override to
-             Stretch so the AutoSuggestBox grows with the title bar. -->
-                <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
-            </TitleBar.Resources>
-            <TitleBar.Content>
-                <SplitButton x:Name="SelectServer" Width="200" Height="32" HorizontalAlignment="Center">
-                    <SplitButton.Flyout>
-                        <Flyout Placement="Bottom">
-                            <Grid Grid.Row="1" Width="200">
-                                <ListView x:Name="ServersListView" SelectionMode="Single">
-                                    <ListView.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0" Spacing="6">
-                                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                                            <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold"/>
-                                                            <Border CornerRadius="4" Padding="6,2" Background="{ThemeResource AccentFillColorDefaultBrush}">
-                                                                <TextBlock Text="{Binding Engine}" Foreground="White" FontSize="11"/>
-                                                            </Border>
-                                                        </StackPanel>
-
-                                                        <StackPanel Orientation="Horizontal" Spacing="16">
-                                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                <TextBlock Text="Versión:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                                <TextBlock Text="{Binding Version}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                            </StackPanel>
-                                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                <TextBlock Text="Puerto:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                                <TextBlock Text="{Binding Port}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                            </StackPanel>
-                                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                                <TextBlock Text="RAM Máx:" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                                <TextBlock Text="{Binding MemoryMaxMb}" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                                <TextBlock Text="MB" FontSize="13" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                                            </StackPanel>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
-                            </Grid>
-                        </Flyout>
-                    </SplitButton.Flyout>
-                </SplitButton>
-            </TitleBar.Content>
-        </TitleBar>
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="40" Background="Transparent" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="8">
+                <Image Source="Assets/Square44x44Logo.scale-200.png" Width="20" Height="20" VerticalAlignment="Center"/>
+                <TextBlock Text="Zenith MC Server" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
 
         <!-- Navigation View -->
-        <NavigationView x:Name="NavView" 
-                        Grid.Row="1" 
-                        PaneDisplayMode="Auto" 
-                        IsSettingsVisible="False" 
-                        SelectionChanged="NavView_SelectionChanged" 
-                        IsPaneToggleButtonVisible="False" 
-                        IsBackButtonVisible="Collapsed">
+        <NavigationView x:Name="NavView" Grid.Row="1" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Servidores" Tag="Dashboard">
                     <NavigationViewItem.Icon>
