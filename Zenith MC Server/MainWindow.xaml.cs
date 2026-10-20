@@ -24,10 +24,11 @@ namespace Zenith_MC_Server
         private readonly FileManagerService _fileManager;
         private readonly ServerProcessManager _processManager;
         private readonly PluginModManagerService _pluginModManager;
+        private readonly MarketplaceService _marketplaceService;
 
         private ServerPropertiesConfig _currentProperties;
         private ServerFileItem? _selectedFileItem;
-        private PluginModItem? _selectedPluginModItem;
+        private MarketplaceItem? _selectedMarketplaceItem;
         private List<MinecraftVersionInfo> _wizardMojangVersions = new();
 
         private readonly List<string> _knownMinecraftCommands = new()
@@ -46,6 +47,7 @@ namespace Zenith_MC_Server
             _fileManager = new FileManagerService();
             _processManager = new ServerProcessManager();
             _pluginModManager = new PluginModManagerService();
+            _marketplaceService = new MarketplaceService();
             _currentProperties = new ServerPropertiesConfig();
 
             this.InitializeComponent();
@@ -285,10 +287,20 @@ namespace Zenith_MC_Server
             _currentProperties = _configService.LoadProperties(serverDir);
             TxtActivePort.Text = $"Puerto: {_currentProperties.GetProperty("server-port", "25565")}";
 
+            bool isPluginLoader = IsPluginMode();
+            NavItemDownloadPlugins.IsEnabled = isPluginLoader;
+            NavItemInstalledPlugins.IsEnabled = isPluginLoader;
+
+            NavItemDownloadMods.IsEnabled = !isPluginLoader;
+            NavItemInstalledMods.IsEnabled = !isPluginLoader;
+
             LoadConfigurationToUI();
             RefreshFileList();
             LoadEngineConfigs();
-            RefreshPluginsModsList();
+            RefreshInstalledPluginsList();
+            RefreshInstalledModsList();
+            RefreshMarketplacePluginCatalog();
+            RefreshMarketplaceModCatalog();
         }
 
         #endregion
@@ -300,7 +312,11 @@ namespace Zenith_MC_Server
             ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
             ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
             ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
-            ViewPluginsMods.Visibility = tag == "PluginsMods" ? Visibility.Visible : Visibility.Collapsed;
+            ViewDownloadPlugins.Visibility = tag == "DownloadPlugins" ? Visibility.Visible : Visibility.Collapsed;
+            ViewDownloadMods.Visibility = tag == "DownloadMods" ? Visibility.Visible : Visibility.Collapsed;
+            ViewInstalledPlugins.Visibility = tag == "InstalledPlugins" ? Visibility.Visible : Visibility.Collapsed;
+            ViewInstalledMods.Visibility = tag == "InstalledMods" ? Visibility.Visible : Visibility.Collapsed;
+            ViewMarketplaceDetails.Visibility = tag == "MarketplaceDetails" ? Visibility.Visible : Visibility.Collapsed;
             ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
             ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
             ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
@@ -318,9 +334,21 @@ namespace Zenith_MC_Server
                     LoadConfigurationToUI();
                     LoadEngineConfigs();
                 }
-                else if (tag == "PluginsMods")
+                else if (tag == "DownloadPlugins")
                 {
-                    RefreshPluginsModsList();
+                    RefreshMarketplacePluginCatalog();
+                }
+                else if (tag == "DownloadMods")
+                {
+                    RefreshMarketplaceModCatalog();
+                }
+                else if (tag == "InstalledPlugins")
+                {
+                    RefreshInstalledPluginsList();
+                }
+                else if (tag == "InstalledMods")
+                {
+                    RefreshInstalledModsList();
                 }
                 else if (tag == "FileManager")
                 {
@@ -664,36 +692,152 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Plugins & Mods Manager
+        #region Marketplace & Installed Plugins / Mods
 
-        private bool IsPluginMode()
+        private void RefreshMarketplacePluginCatalog()
         {
-            if (_serverManager?.ActiveProfile == null) return true;
-            string loader = _serverManager.ActiveProfile.SoftwareType.ToLower();
-            return !loader.Contains("fabric") && !loader.Contains("forge");
+            if (_marketplaceService == null || _serverManager?.ActiveProfile == null) return;
+            string ver = _serverManager.ActiveProfile.Version;
+            string loader = _serverManager.ActiveProfile.SoftwareType;
+            string source = (CmbPluginSource.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
+            string search = TxtPluginSearch.Text;
+            string sort = (CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
+
+            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Plugin, ver, loader, source, search, sort);
+            GrdDownloadPlugins.ItemsSource = items;
         }
 
-        private void RefreshPluginsModsList()
+        private void RefreshMarketplaceModCatalog()
+        {
+            if (_marketplaceService == null || _serverManager?.ActiveProfile == null) return;
+            string ver = _serverManager.ActiveProfile.Version;
+            string loader = _serverManager.ActiveProfile.SoftwareType;
+            string source = (CmbModSource.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
+            string search = TxtModSearch.Text;
+            string sort = (CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
+
+            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Mod, ver, loader, source, search, sort);
+            GrdDownloadMods.ItemsSource = items;
+        }
+
+        private void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+        private void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+        private void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+
+        private void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
+        private void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplaceModCatalog();
+        private void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
+
+        private void GrdDownloadPlugins_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is MarketplaceItem item)
+            {
+                OpenMarketplaceItemDetails(item);
+            }
+        }
+
+        private void GrdDownloadMods_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is MarketplaceItem item)
+            {
+                OpenMarketplaceItemDetails(item);
+            }
+        }
+
+        private void OpenMarketplaceItemDetails(MarketplaceItem item)
+        {
+            _selectedMarketplaceItem = item;
+            TxtDetailTitle.Text = item.Title;
+            TxtDetailAuthor.Text = $"Autor: {item.Author}";
+            TxtDetailSource.Text = $"Fuente: {item.SourceName}";
+            TxtDetailDownloads.Text = $"Descargas: {item.FormattedDownloads}";
+            TxtDetailSummary.Text = item.Summary;
+            TxtDetailDescription.Text = item.Description;
+
+            SwitchToView("MarketplaceDetails");
+        }
+
+        private void BtnBackToMarketplace_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedMarketplaceItem != null && _selectedMarketplaceItem.Category == MarketplaceCategory.Mod)
+            {
+                SwitchToView("DownloadMods");
+            }
+            else
+            {
+                SwitchToView("DownloadPlugins");
+            }
+        }
+
+        private async void BtnDetailInstall_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedMarketplaceItem != null && _serverManager?.ActiveProfile != null && _marketplaceService != null)
+            {
+                BtnDetailInstall.IsEnabled = false;
+                BtnDetailInstall.Content = "⏳ Instalando...";
+                try
+                {
+                    string path = await _marketplaceService.DownloadAndInstallItemAsync(_selectedMarketplaceItem, _serverManager.ActiveProfile.DirectoryPath);
+                    AppendConsoleLog($"[Zenith Marketplace] Instalado '{_selectedMarketplaceItem.Title}' en {path}");
+                    BtnDetailInstall.Content = "¡Instalación Exitosa!";
+                }
+                catch (Exception ex)
+                {
+                    AppendConsoleLog($"[Zenith Marketplace Error] {ex.Message}");
+                    BtnDetailInstall.Content = "Error al instalar";
+                }
+                finally
+                {
+                    await Task.Delay(1500);
+                    BtnDetailInstall.IsEnabled = true;
+                    BtnDetailInstall.Content = "🚀 Instalar en Servidor";
+                }
+            }
+        }
+
+        private async void BtnInstallMarketplaceItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is MarketplaceItem item && _serverManager?.ActiveProfile != null && _marketplaceService != null)
+            {
+                btn.IsEnabled = false;
+                btn.Content = "⏳";
+                try
+                {
+                    await _marketplaceService.DownloadAndInstallItemAsync(item, _serverManager.ActiveProfile.DirectoryPath);
+                    btn.Content = "✓";
+                    AppendConsoleLog($"[Zenith Marketplace] Instalado '{item.Title}' ({item.JarFileName}).");
+                }
+                catch (Exception ex)
+                {
+                    btn.Content = "Error";
+                    AppendConsoleLog($"[Zenith Marketplace Error] {ex.Message}");
+                }
+            }
+        }
+
+        private void RefreshInstalledPluginsList()
         {
             if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
-            bool isPlugin = IsPluginMode();
-            TxtPluginsModsTitle.Text = isPlugin ? "Gestión de Plugins (Spigot / Paper / Purpur)" : "Gestión de Mods (Fabric / Forge)";
-
-            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, isPlugin);
-            LstPluginModItems.ItemsSource = items;
+            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, true);
+            LstInstalledPlugins.ItemsSource = items;
         }
 
-        private void BtnRefreshPlugins_Click(object sender, RoutedEventArgs e)
+        private void RefreshInstalledModsList()
         {
-            RefreshPluginsModsList();
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
+            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, false);
+            LstInstalledMods.ItemsSource = items;
         }
+
+        private void BtnRefreshInstalledPlugins_Click(object sender, RoutedEventArgs e) => RefreshInstalledPluginsList();
+        private void BtnRefreshInstalledMods_Click(object sender, RoutedEventArgs e) => RefreshInstalledModsList();
 
         private void ChkTogglePlugin_Click(object sender, RoutedEventArgs e)
         {
             if (sender is CheckBox chk && chk.Tag is PluginModItem item && _pluginModManager != null)
             {
                 _pluginModManager.ToggleItem(item.FullPath);
-                RefreshPluginsModsList();
+                RefreshInstalledPluginsList();
             }
         }
 
@@ -702,17 +846,25 @@ namespace Zenith_MC_Server
             if (sender is Button btn && btn.Tag is PluginModItem item && _pluginModManager != null)
             {
                 _pluginModManager.DeleteItem(item.FullPath);
-                RefreshPluginsModsList();
+                RefreshInstalledPluginsList();
             }
         }
 
-        private void LstPluginModItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ChkToggleMod_Click(object sender, RoutedEventArgs e)
         {
-            if (LstPluginModItems.SelectedItem is PluginModItem item)
+            if (sender is CheckBox chk && chk.Tag is PluginModItem item && _pluginModManager != null)
             {
-                _selectedPluginModItem = item;
-                TxtPluginStatus.Text = $"Archivo: {item.FileName} | Tamaño: {item.FormattedSize}";
-                TxtPluginConfigViewer.Text = $"// Configuración o detalles de {item.FileName}\n// Estado: {(item.IsEnabled ? "ACTIVO" : "DESACTIVADO")}";
+                _pluginModManager.ToggleItem(item.FullPath);
+                RefreshInstalledModsList();
+            }
+        }
+
+        private void BtnDeleteModItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is PluginModItem item && _pluginModManager != null)
+            {
+                _pluginModManager.DeleteItem(item.FullPath);
+                RefreshInstalledModsList();
             }
         }
 
@@ -721,7 +873,7 @@ namespace Zenith_MC_Server
             e.AcceptedOperation = DataPackageOperation.Copy;
         }
 
-        private async void DropZoneBorder_Drop(object sender, DragEventArgs e)
+        private async void DropZonePlugins_Drop(object sender, DragEventArgs e)
         {
             if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
 
@@ -730,41 +882,37 @@ namespace Zenith_MC_Server
                 var items = await e.DataView.GetStorageItemsAsync();
                 var paths = items.Select(i => i.Path).ToList();
 
-                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, IsPluginMode());
-                RefreshPluginsModsList();
-                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a {(IsPluginMode() ? "plugins" : "mods")}.");
+                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, true);
+                RefreshInstalledPluginsList();
+                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a plugins.");
             }
         }
 
-        private void BtnOpenExternalEditor_Click(object sender, RoutedEventArgs e)
+        private async void DropZoneMods_Drop(object sender, DragEventArgs e)
         {
-            if (_selectedPluginModItem == null) return;
-            string editor = _serverManager?.ActiveProfile?.ExternalEditorPath ?? "";
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
 
-            try
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
             {
-                if (!string.IsNullOrWhiteSpace(editor) && File.Exists(editor))
-                {
-                    Process.Start(editor, $"\"{_selectedPluginModItem.FullPath}\"");
-                }
-                else
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = _selectedPluginModItem.FullPath,
-                        UseShellExecute = true
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                TxtPluginStatus.Text = $"Error al abrir editor: {ex.Message}";
+                var items = await e.DataView.GetStorageItemsAsync();
+                var paths = items.Select(i => i.Path).ToList();
+
+                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, false);
+                RefreshInstalledModsList();
+                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a mods.");
             }
         }
 
         #endregion
 
         #region File Manager & Code Editor
+
+        private bool IsPluginMode()
+        {
+            if (_serverManager?.ActiveProfile == null) return true;
+            string loader = _serverManager.ActiveProfile.SoftwareType.ToLower();
+            return !loader.Contains("fabric") && !loader.Contains("forge");
+        }
 
         private void RefreshFileList()
         {
