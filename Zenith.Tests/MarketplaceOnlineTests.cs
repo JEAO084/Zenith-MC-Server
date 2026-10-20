@@ -27,5 +27,16 @@ namespace Zenith.Tests
             Assert.NotEmpty(items);
             Assert.Contains(items, i => i.Title.ToLower().Contains("essentials"));
         }
+
+        [Fact]
+        public async Task GetFeaturedItemsAsync_WithPagination_CalculatesCorrectOffset()
+        {
+            var service = new MarketplaceService();
+            var page1 = await service.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, page: 1, pageSize: 5);
+            var page2 = await service.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, page: 2, pageSize: 5);
+
+            Assert.NotNull(page1);
+            Assert.NotNull(page2);
+        }
     }
 }

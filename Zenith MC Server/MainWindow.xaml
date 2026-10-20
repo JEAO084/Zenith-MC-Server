@@ -13,7 +13,7 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Background="Transparent">
+    <Grid Background="Transparent" PointerPressed="RootGrid_PointerPressed">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -40,6 +40,7 @@
 
             <!-- Active Server Selector (Multi-Server Manager) -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                <Button Content="← Atrás (Botón 4)" Click="BtnNavigateBack_Click" Background="#33FFFFFF" Foreground="White" CornerRadius="6" Padding="8,4" FontSize="11"/>
                 <TextBlock Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
                 <ComboBox x:Name="CmbServerSelector" Width="200" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
                 <Button Content="+ Crear Servidor (Wizard)" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
@@ -567,6 +568,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
@@ -618,7 +620,7 @@
                     <GridView Grid.Row="1" x:Name="GrdDownloadPlugins" ItemClick="GrdDownloadPlugins_ItemClick" IsItemClickEnabled="True">
                         <GridView.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="260" Height="140" Background="#2212121F" CornerRadius="12" Padding="12" Margin="6" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <Border Width="260" Height="150" Background="#2212121F" CornerRadius="12" Padding="12" Margin="6" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -627,11 +629,17 @@
                                         </Grid.RowDefinitions>
                                         <Grid Grid.Row="0">
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" TextTrimming="CharacterEllipsis"/>
-                                            <Border Grid.Column="1" Background="#337C3AED" CornerRadius="4" Padding="6,2">
+                                            <Image Width="28" Height="28" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <Image.Source>
+                                                    <BitmapImage UriSource="{Binding IconUrl}" />
+                                                </Image.Source>
+                                            </Image>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="2" Background="#337C3AED" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding SourceName}" FontSize="9" Foreground="#A78BFA"/>
                                             </Border>
                                         </Grid>
@@ -647,6 +655,13 @@
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
+
+                    <!-- Pagination Controls Bar -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12" Margin="0,12,0,0">
+                        <Button x:Name="BtnPrevPluginPage" Content="◀ Anterior" Click="BtnPrevPluginPage_Click" CornerRadius="6"/>
+                        <TextBlock x:Name="TxtPluginPageNumber" Text="Página 1" VerticalAlignment="Center" FontWeight="Bold" Foreground="#38BDF8"/>
+                        <Button x:Name="BtnNextPluginPage" Content="Siguiente ▶" Click="BtnNextPluginPage_Click" CornerRadius="6"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- 5. DOWNLOAD MODS MARKETPLACE VIEW -->
@@ -654,6 +669,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
@@ -700,7 +716,7 @@
                     <GridView Grid.Row="1" x:Name="GrdDownloadMods" ItemClick="GrdDownloadMods_ItemClick" IsItemClickEnabled="True">
                         <GridView.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="260" Height="140" Background="#2212121F" CornerRadius="12" Padding="12" Margin="6" BorderBrush="#33FFFFFF" BorderThickness="1">
+                                <Border Width="260" Height="150" Background="#2212121F" CornerRadius="12" Padding="12" Margin="6" BorderBrush="#33FFFFFF" BorderThickness="1">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -709,11 +725,17 @@
                                         </Grid.RowDefinitions>
                                         <Grid Grid.Row="0">
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" TextTrimming="CharacterEllipsis"/>
-                                            <Border Grid.Column="1" Background="#337C3AED" CornerRadius="4" Padding="6,2">
+                                            <Image Width="28" Height="28" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <Image.Source>
+                                                    <BitmapImage UriSource="{Binding IconUrl}" />
+                                                </Image.Source>
+                                            </Image>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            <Border Grid.Column="2" Background="#337C3AED" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding SourceName}" FontSize="9" Foreground="#A78BFA"/>
                                             </Border>
                                         </Grid>
@@ -729,6 +751,13 @@
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
+
+                    <!-- Pagination Controls Bar -->
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12" Margin="0,12,0,0">
+                        <Button x:Name="BtnPrevModPage" Content="◀ Anterior" Click="BtnPrevModPage_Click" CornerRadius="6"/>
+                        <TextBlock x:Name="TxtModPageNumber" Text="Página 1" VerticalAlignment="Center" FontWeight="Bold" Foreground="#38BDF8"/>
+                        <Button x:Name="BtnNextModPage" Content="Siguiente ▶" Click="BtnNextModPage_Click" CornerRadius="6"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- 6. ITEM DETAILS PAGE VIEW -->
@@ -740,11 +769,14 @@
                             <Border Background="#2212121F" CornerRadius="12" Padding="20" BorderBrush="#33FFFFFF" BorderThickness="1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="0" Spacing="8">
+                                    <Image x:Name="ImgDetailIcon" Width="48" Height="48" Margin="0,0,16,0" VerticalAlignment="Center"/>
+
+                                    <StackPanel Grid.Column="1" Spacing="8">
                                         <TextBlock x:Name="TxtDetailTitle" Text="Título del Elemento" FontSize="22" FontWeight="Bold" Foreground="#38BDF8"/>
                                         <StackPanel Orientation="Horizontal" Spacing="12">
                                             <TextBlock x:Name="TxtDetailAuthor" Text="Autor: -" FontSize="12" Foreground="#A78BFA"/>
@@ -754,7 +786,7 @@
                                         <TextBlock x:Name="TxtDetailSummary" Text="Resumen" FontSize="13" Foreground="#DDDDDD" Margin="0,8,0,0"/>
                                     </StackPanel>
 
-                                    <Button Grid.Column="1" x:Name="BtnDetailInstall" Content="🚀 Instalar en Servidor" Click="BtnDetailInstall_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" x:Name="BtnDetailInstall" Content="🚀 Instalar en Servidor" Click="BtnDetailInstall_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
 
@@ -777,7 +809,7 @@
 
                     <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
                         <TextBlock Text="Administración de Plugins Instalados" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <TextBlock Text="Activa, desactiva, actualiza o elimina plugins directamente desde la lista. Arrastra archivos .jar para instalarlos." FontSize="12" Foreground="#BBBBBB"/>
+                        <TextBlock Text="Activa, desactiva, actualiza con 1-click o elimina plugins directamente desde la lista. Arrastra archivos .jar para instalarlos." FontSize="12" Foreground="#BBBBBB"/>
                     </StackPanel>
 
                     <Border Grid.Row="1" Background="#1C1422" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1" AllowDrop="True" DragOver="DropZoneBorder_DragOver" Drop="DropZonePlugins_Drop">
@@ -802,16 +834,23 @@
                                         <Grid Padding="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" Click="ChkTogglePlugin_Click" Tag="{Binding}" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="12,0">
+                                            <Image Grid.Column="1" Width="24" Height="24" Margin="8,0" VerticalAlignment="Center">
+                                                <Image.Source>
+                                                    <BitmapImage UriSource="{Binding IconUrl}"/>
+                                                </Image.Source>
+                                            </Image>
+                                            <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center" Margin="8,0">
                                                 <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13" Foreground="#FFFFFF"/>
                                                 <TextBlock Text="{Binding FormattedSize}" FontSize="11" Foreground="#888888"/>
                                             </StackPanel>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                                                <Button Content="Eliminar" Tag="{Binding}" Click="BtnDeletePluginItem_Click" Background="#441111" Foreground="#FF8888" CornerRadius="6"/>
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+                                                <Button Content="⚡ Actualizar (1-Click)" Tag="{Binding}" Click="BtnUpdateInstalledItem_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                                                <Button Content="Eliminar" Tag="{Binding}" Click="BtnDeletePluginItem_Click" Background="#441111" Foreground="#FF8888" CornerRadius="6" Padding="10,4" FontSize="11"/>
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
@@ -830,7 +869,7 @@
 
                     <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
                         <TextBlock Text="Administración de Mods Instalados" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        <TextBlock Text="Activa, desactiva, actualiza o elimina mods en el servidor. Arrastra archivos .jar para instalarlos." FontSize="12" Foreground="#BBBBBB"/>
+                        <TextBlock Text="Activa, desactiva, actualiza con 1-click o elimina mods en el servidor. Arrastra archivos .jar para instalarlos." FontSize="12" Foreground="#BBBBBB"/>
                     </StackPanel>
 
                     <Border Grid.Row="1" Background="#1C1422" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1" AllowDrop="True" DragOver="DropZoneBorder_DragOver" Drop="DropZoneMods_Drop">
@@ -855,16 +894,23 @@
                                         <Grid Padding="8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" Click="ChkToggleMod_Click" Tag="{Binding}" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" Margin="12,0">
+                                            <Image Grid.Column="1" Width="24" Height="24" Margin="8,0" VerticalAlignment="Center">
+                                                <Image.Source>
+                                                    <BitmapImage UriSource="{Binding IconUrl}"/>
+                                                </Image.Source>
+                                            </Image>
+                                            <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center" Margin="8,0">
                                                 <TextBlock Text="{Binding FileName}" FontWeight="Bold" FontSize="13" Foreground="#FFFFFF"/>
                                                 <TextBlock Text="{Binding FormattedSize}" FontSize="11" Foreground="#888888"/>
                                             </StackPanel>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                                                <Button Content="Eliminar" Tag="{Binding}" Click="BtnDeleteModItem_Click" Background="#441111" Foreground="#FF8888" CornerRadius="6"/>
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+                                                <Button Content="⚡ Actualizar (1-Click)" Tag="{Binding}" Click="BtnUpdateInstalledItem_Click" Background="#7C3AED" Foreground="White" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                                                <Button Content="Eliminar" Tag="{Binding}" Click="BtnDeleteModItem_Click" Background="#441111" Foreground="#FF8888" CornerRadius="6" Padding="10,4" FontSize="11"/>
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>

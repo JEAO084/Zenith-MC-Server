@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,6 +32,10 @@ namespace Zenith_MC_Server
         private MarketplaceItem? _selectedMarketplaceItem;
         private List<MinecraftVersionInfo> _wizardMojangVersions = new();
 
+        private readonly Stack<string> _navigationHistory = new();
+        private int _pluginCurrentPage = 1;
+        private int _modCurrentPage = 1;
+
         private readonly List<string> _knownMinecraftCommands = new()
         {
             "gamemode survival", "gamemode creative", "gamemode adventure", "gamemode spectator",
@@ -52,7 +57,6 @@ namespace Zenith_MC_Server
 
             this.InitializeComponent();
 
-            // Custom Title Bar Integration
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(AppTitleBar);
 
@@ -65,9 +69,37 @@ namespace Zenith_MC_Server
             LoadJavaRuntimesUI();
             LoadLauncherSettingsUI();
 
-            // Fetch Mojang versions for wizard
             _ = LoadWizardVersionsAsync();
         }
+
+        #region Mouse Button 4 & 5 (XButton1 & XButton2) Back/Forward Navigation
+
+        private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            var point = e.GetCurrentPoint(sender as UIElement);
+            if (point.Properties.IsXButton1Pressed)
+            {
+                NavigateBack();
+                e.Handled = true;
+            }
+        }
+
+        private void BtnNavigateBack_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateBack();
+        }
+
+        private void NavigateBack()
+        {
+            if (_navigationHistory.Count > 1)
+            {
+                _navigationHistory.Pop(); // current view
+                string previousTag = _navigationHistory.Peek();
+                SwitchToView(previousTag, recordHistory: false);
+            }
+        }
+
+        #endregion
 
         #region Multi-Server Manager & Wizard
 
@@ -159,7 +191,6 @@ namespace Zenith_MC_Server
         {
             if (_serverManager == null || _downloadService == null || BtnFinishWizard == null || WzdProgressBar == null) return;
 
-            // Prevent double-click creation
             BtnFinishWizard.IsEnabled = false;
             BtnFinishWizard.Content = "⏳ Creando Servidor e Instalando Archivos...";
             WzdProgressBar.Visibility = Visibility.Visible;
@@ -199,11 +230,9 @@ namespace Zenith_MC_Server
                     int.TryParse(WzdTxtPort.Text.Trim(), out port);
                 }
 
-                // 1. Create Server Instance Profile & Folder
                 string displayName = $"{icon} {name}";
                 var newProfile = _serverManager.CreateProfile(displayName, loader, version, ramGb);
 
-                // 2. Download server.jar for selected loader & version
                 if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Obteniendo {loader} {version} (server.jar)...";
                 try
                 {
@@ -219,13 +248,11 @@ namespace Zenith_MC_Server
                     AppendConsoleLog($"[Zenith Warning] No se pudo obtener server.jar automático: {jarEx.Message}");
                 }
 
-                // 3. Set Aikar's JVM Flags
                 if (WzdToggleAikarsFlags != null && WzdToggleAikarsFlags.IsOn && _configService != null)
                 {
                     newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
                 }
 
-                // 4. Download/Verify Java Runtime
                 int reqJava = _downloadService.GetRecommendedJavaVersion(version);
                 var javaVerOption = _javaService?.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
                 if (javaVerOption != null)
@@ -246,7 +273,6 @@ namespace Zenith_MC_Server
                     }
                 }
 
-                // 5. Save EULA & server.properties
                 if (_configService != null)
                 {
                     bool eulaAccepted = WzdToggleEula?.IsOn ?? true;
@@ -257,7 +283,6 @@ namespace Zenith_MC_Server
                     _configService.SaveProperties(newProfile.DirectoryPath, props);
                 }
 
-                // Select newly created server profile as active
                 _serverManager.UpdateProfile(newProfile);
                 _serverManager.SelectProfile(newProfile.Id);
 
@@ -323,8 +348,13 @@ namespace Zenith_MC_Server
 
         #region Navigation View Switching
 
-        private void SwitchToView(string tag)
+        private void SwitchToView(string tag, bool recordHistory = true)
         {
+            if (recordHistory && (_navigationHistory.Count == 0 || _navigationHistory.Peek() != tag))
+            {
+                _navigationHistory.Push(tag);
+            }
+
             if (ViewDashboard != null) ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
             if (ViewWizard != null) ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
             if (ViewConfig != null) ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
@@ -427,7 +457,6 @@ namespace Zenith_MC_Server
 
                 int ramGb = profile.AllocatedRamGb;
 
-                // Resolve Java executable path
                 string javaPath = profile.JavaExecutablePath;
                 if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
                 {
@@ -713,7 +742,7 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Marketplace & Installed Plugins / Mods
+        #region Marketplace & Pagination & Installed Plugins / Mods
 
         private async Task RefreshMarketplacePluginCatalogAsync()
         {
@@ -727,8 +756,11 @@ namespace Zenith_MC_Server
             string search = TxtPluginSearch?.Text ?? "";
             string sort = (CmbPluginSort != null && CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category);
+            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category, overrideVersionFilter: "Todas", page: _pluginCurrentPage, pageSize: 20);
             GrdDownloadPlugins.ItemsSource = items;
+
+            if (TxtPluginPageNumber != null) TxtPluginPageNumber.Text = $"Página {_pluginCurrentPage}";
+            if (BtnPrevPluginPage != null) BtnPrevPluginPage.IsEnabled = _pluginCurrentPage > 1;
         }
 
         private async Task RefreshMarketplaceModCatalogAsync()
@@ -743,21 +775,54 @@ namespace Zenith_MC_Server
             string search = TxtModSearch?.Text ?? "";
             string sort = (CmbModSort != null && CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Mod, ver, loader, source, search, sort, category);
+            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Mod, ver, loader, source, search, sort, category, overrideVersionFilter: "Todas", page: _modCurrentPage, pageSize: 20);
             GrdDownloadMods.ItemsSource = items;
+
+            if (TxtModPageNumber != null) TxtModPageNumber.Text = $"Página {_modCurrentPage}";
+            if (BtnPrevModPage != null) BtnPrevModPage.IsEnabled = _modCurrentPage > 1;
         }
 
-        private async void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
-        private async void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
-        private async void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
-        private async void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
-        private async void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
+        private async void BtnPrevPluginPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_pluginCurrentPage > 1)
+            {
+                _pluginCurrentPage--;
+                await RefreshMarketplacePluginCatalogAsync();
+            }
+        }
 
-        private async void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
-        private async void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
-        private async void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
-        private async void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
-        private async void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
+        private async void BtnNextPluginPage_Click(object sender, RoutedEventArgs e)
+        {
+            _pluginCurrentPage++;
+            await RefreshMarketplacePluginCatalogAsync();
+        }
+
+        private async void BtnPrevModPage_Click(object sender, RoutedEventArgs e)
+        {
+            if (_modCurrentPage > 1)
+            {
+                _modCurrentPage--;
+                await RefreshMarketplaceModCatalogAsync();
+            }
+        }
+
+        private async void BtnNextModPage_Click(object sender, RoutedEventArgs e)
+        {
+            _modCurrentPage++;
+            await RefreshMarketplaceModCatalogAsync();
+        }
+
+        private async void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
+        private async void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
+        private async void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
+        private async void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
+        private async void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
+
+        private async void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
+        private async void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
+        private async void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
+        private async void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
+        private async void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
 
         private void GrdDownloadPlugins_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -784,6 +849,11 @@ namespace Zenith_MC_Server
             if (TxtDetailDownloads != null) TxtDetailDownloads.Text = $"Descargas: {item.FormattedDownloads}";
             if (TxtDetailSummary != null) TxtDetailSummary.Text = item.Summary;
             if (TxtDetailDescription != null) TxtDetailDescription.Text = item.Description;
+
+            if (ImgDetailIcon != null && !string.IsNullOrEmpty(item.IconUrl))
+            {
+                try { ImgDetailIcon.Source = new BitmapImage(new Uri(item.IconUrl)); } catch { }
+            }
 
             SwitchToView("MarketplaceDetails");
         }
@@ -862,6 +932,48 @@ namespace Zenith_MC_Server
 
         private void BtnRefreshInstalledPlugins_Click(object sender, RoutedEventArgs e) => RefreshInstalledPluginsList();
         private void BtnRefreshInstalledMods_Click(object sender, RoutedEventArgs e) => RefreshInstalledModsList();
+
+        private async void BtnUpdateInstalledItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is PluginModItem item && _serverManager?.ActiveProfile != null && _marketplaceService != null)
+            {
+                btn.IsEnabled = false;
+                btn.Content = "⏳ Buscando actualización...";
+                try
+                {
+                    bool isPlugin = IsPluginMode();
+                    string cleanName = item.FileName.Replace(".jar.disabled", "").Replace(".jar", "").Split('-')[0];
+                    var searchResults = await _marketplaceService.GetFeaturedItemsAsync(
+                        isPlugin ? MarketplaceCategory.Plugin : MarketplaceCategory.Mod,
+                        searchQuery: cleanName);
+
+                    if (searchResults.Count > 0)
+                    {
+                        var match = searchResults[0];
+                        await _marketplaceService.DownloadAndInstallItemAsync(match, _serverManager.ActiveProfile.DirectoryPath);
+                        btn.Content = "✓ ¡Actualizado!";
+                        AppendConsoleLog($"[Zenith 1-Click Update] '{item.FileName}' actualizado exitosamente con la última versión de {match.SourceName}.");
+                    }
+                    else
+                    {
+                        btn.Content = "Ya actualizado";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    btn.Content = "Error";
+                    AppendConsoleLog($"[Zenith Update Notice] {ex.Message}");
+                }
+                finally
+                {
+                    await Task.Delay(1500);
+                    btn.IsEnabled = true;
+                    btn.Content = "⚡ Actualizar (1-Click)";
+                    RefreshInstalledPluginsList();
+                    RefreshInstalledModsList();
+                }
+            }
+        }
 
         private void ChkTogglePlugin_Click(object sender, RoutedEventArgs e)
         {

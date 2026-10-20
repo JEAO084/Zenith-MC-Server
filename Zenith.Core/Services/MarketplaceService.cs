@@ -28,23 +28,24 @@ namespace Zenith.Core.Services
             string searchQuery = "",
             string sortBy = "Downloads",
             string subCategoryFilter = "Todas",
-            string overrideVersionFilter = "Todas")
+            string overrideVersionFilter = "Todas",
+            int page = 1,
+            int pageSize = 20)
         {
             var results = new List<MarketplaceItem>();
 
-            // Try fetching real items from Modrinth and Spiget APIs online
             try
             {
                 if (sourceName.Equals("Modrinth", StringComparison.OrdinalIgnoreCase) || sourceName.StartsWith("Todas", StringComparison.OrdinalIgnoreCase))
                 {
-                    var modrinthItems = await FetchModrinthItemsAsync(category, searchQuery, mcVersion, loader);
+                    var modrinthItems = await FetchModrinthItemsAsync(category, searchQuery, mcVersion, loader, page, pageSize);
                     results.AddRange(modrinthItems);
                 }
 
                 if (category == MarketplaceCategory.Plugin &&
                     (sourceName.Equals("Spigot", StringComparison.OrdinalIgnoreCase) || sourceName.Equals("Bukkit", StringComparison.OrdinalIgnoreCase) || sourceName.StartsWith("Todas", StringComparison.OrdinalIgnoreCase)))
                 {
-                    var spigetItems = await FetchSpigetItemsAsync(searchQuery);
+                    var spigetItems = await FetchSpigetItemsAsync(searchQuery, page, pageSize);
                     results.AddRange(spigetItems);
                 }
             }
@@ -53,13 +54,12 @@ namespace Zenith.Core.Services
                 // Network error fallback
             }
 
-            // Fallback to local sample catalog if online query returned no results or failed
+            // Fallback to sample catalog if online API yields no items
             if (results.Count == 0)
             {
                 results = GetSampleCatalog();
             }
 
-            // Filter results
             var filtered = results.Where(i => i.Category == category).ToList();
 
             if (!string.IsNullOrWhiteSpace(sourceName) && !sourceName.StartsWith("Todas", StringComparison.OrdinalIgnoreCase))
@@ -116,7 +116,6 @@ namespace Zenith.Core.Services
             return filtered;
         }
 
-        // Synchronous fallback wrapper
         public List<MarketplaceItem> GetFeaturedItems(
             MarketplaceCategory category,
             string mcVersion = "",
@@ -125,11 +124,13 @@ namespace Zenith.Core.Services
             string searchQuery = "",
             string sortBy = "Downloads",
             string subCategoryFilter = "Todas",
-            string overrideVersionFilter = "Todas")
+            string overrideVersionFilter = "Todas",
+            int page = 1,
+            int pageSize = 20)
         {
             try
             {
-                return Task.Run(() => GetFeaturedItemsAsync(category, mcVersion, loader, sourceName, searchQuery, sortBy, subCategoryFilter, overrideVersionFilter)).GetAwaiter().GetResult();
+                return Task.Run(() => GetFeaturedItemsAsync(category, mcVersion, loader, sourceName, searchQuery, sortBy, subCategoryFilter, overrideVersionFilter, page, pageSize)).GetAwaiter().GetResult();
             }
             catch
             {
@@ -137,11 +138,13 @@ namespace Zenith.Core.Services
             }
         }
 
-        private async Task<List<MarketplaceItem>> FetchModrinthItemsAsync(MarketplaceCategory category, string query, string mcVersion, string loader)
+        private async Task<List<MarketplaceItem>> FetchModrinthItemsAsync(MarketplaceCategory category, string query, string mcVersion, string loader, int page, int pageSize)
         {
             var items = new List<MarketplaceItem>();
             string projectType = category == MarketplaceCategory.Plugin ? "plugin" : "mod";
-            string searchUrl = $"https://api.modrinth.com/v2/search?limit=20";
+            int offset = Math.Max(0, (page - 1) * pageSize);
+
+            string searchUrl = $"https://api.modrinth.com/v2/search?limit={pageSize}&offset={offset}";
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -164,6 +167,7 @@ namespace Zenith.Core.Services
                 string title = hit.TryGetProperty("title", out var tProp) ? tProp.GetString() ?? "" : "";
                 string author = hit.TryGetProperty("author", out var aProp) ? aProp.GetString() ?? "Modrinth Creator" : "Modrinth Creator";
                 string summary = hit.TryGetProperty("description", out var dProp) ? dProp.GetString() ?? "" : "";
+                string iconUrl = hit.TryGetProperty("icon_url", out var iconProp) ? iconProp.GetString() ?? "" : "";
                 long downloads = hit.TryGetProperty("downloads", out var dlProp) ? dlProp.GetInt64() : 0;
                 string slug = hit.TryGetProperty("slug", out var sProp) ? sProp.GetString() ?? id : id;
 
@@ -179,6 +183,7 @@ namespace Zenith.Core.Services
                     Author = author,
                     Summary = summary,
                     Description = $"{summary}\n\nProyecto de Modrinth ID: {id}\nSlug: {slug}",
+                    IconUrl = iconUrl,
                     DownloadsCount = downloads,
                     SourceName = "Modrinth",
                     Category = category,
@@ -193,12 +198,12 @@ namespace Zenith.Core.Services
             return items;
         }
 
-        private async Task<List<MarketplaceItem>> FetchSpigetItemsAsync(string query)
+        private async Task<List<MarketplaceItem>> FetchSpigetItemsAsync(string query, int page, int pageSize)
         {
             var items = new List<MarketplaceItem>();
             string url = string.IsNullOrWhiteSpace(query)
-                ? "https://api.spiget.org/v2/resources?size=15&sort=-downloads"
-                : $"https://api.spiget.org/v2/resources/search/{Uri.EscapeDataString(query)}?size=15";
+                ? $"https://api.spiget.org/v2/resources?size={pageSize}&page={page}&sort=-downloads"
+                : $"https://api.spiget.org/v2/resources/search/{Uri.EscapeDataString(query)}?size={pageSize}&page={page}";
 
             var response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode) return items;
@@ -222,6 +227,7 @@ namespace Zenith.Core.Services
                     Author = "Spigot Creator",
                     Summary = string.IsNullOrEmpty(tag) ? "Plugin de SpigotMC" : tag,
                     Description = $"{tag}\n\nResource ID SpigotMC: {id}",
+                    IconUrl = $"https://api.spiget.org/v2/resources/{id}/icon/data",
                     DownloadsCount = downloads,
                     SourceName = "Spigot",
                     Category = MarketplaceCategory.Plugin,
@@ -248,7 +254,6 @@ namespace Zenith.Core.Services
 
             string targetFilePath = Path.Combine(targetDir, item.JarFileName);
 
-            // 1. Modrinth version download resolution
             if (!string.IsNullOrEmpty(item.DownloadUrl) && item.DownloadUrl.Contains("api.modrinth.com/v2/project/"))
             {
                 try
@@ -280,7 +285,6 @@ namespace Zenith.Core.Services
                 catch { }
             }
 
-            // 2. Direct HTTP download (Spiget or direct URL)
             if (!string.IsNullOrEmpty(item.DownloadUrl) && item.DownloadUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
                 try
@@ -294,7 +298,6 @@ namespace Zenith.Core.Services
                 catch { }
             }
 
-            // Local fallback placeholder
             await File.WriteAllTextAsync(targetFilePath, $"// Jar Binary Placeholder for {item.Title}");
             return targetFilePath;
         }
@@ -338,6 +341,7 @@ namespace Zenith.Core.Services
                     Author = "TeamCity",
                     Summary = "El plugin esencial con más de 100 comandos para administración, economía y teletransportación.",
                     Description = "EssentialsX proporciona comandos fundamentales para cualquier servidor de Minecraft Survival, Factions o Skyblock.",
+                    IconUrl = "https://static.spigotmc.org/img/spigot-icon.png",
                     DownloadsCount = 28500000,
                     SourceName = "Spigot",
                     Category = MarketplaceCategory.Plugin,
@@ -352,6 +356,7 @@ namespace Zenith.Core.Services
                     Author = "sk89q",
                     Summary = "Editor de mapa dentro del juego con selección por varita y generación de esquemas.",
                     Description = "WorldEdit es la herramienta definitiva para constructores y administradores.",
+                    IconUrl = "https://cdn.modrinth.com/assets/modrinth.png",
                     DownloadsCount = 42000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Plugin,
@@ -366,6 +371,7 @@ namespace Zenith.Core.Services
                     Author = "JSandora",
                     Summary = "El gestor de permisos más avanzado con interfaz web interactiva y jerarquías de grupos.",
                     Description = "LuckPerms es el estándar de la industria para administración de permisos en servidores de Minecraft.",
+                    IconUrl = "https://cdn.modrinth.com/assets/modrinth.png",
                     DownloadsCount = 35000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Plugin,
@@ -376,38 +382,11 @@ namespace Zenith.Core.Services
                 },
                 new MarketplaceItem
                 {
-                    Title = "Vault",
-                    Author = "Slikey",
-                    Summary = "API unificada para conectar plugins de Economía, Permisos y Chat.",
-                    Description = "Vault es un plugin puente esencial para que plugins de economía y chats conversen entre sí.",
-                    DownloadsCount = 19000000,
-                    SourceName = "Bukkit",
-                    Category = MarketplaceCategory.Plugin,
-                    SubCategory = "Utilidades",
-                    JarFileName = "Vault-1.7.3.jar",
-                    CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4" },
-                    CompatibleLoaders = new() { "Paper", "Spigot", "Purpur" }
-                },
-                new MarketplaceItem
-                {
-                    Title = "Citizens",
-                    Author = "fullserver",
-                    Summary = "Crea NPCs interactivos que otorgan misiones, tiendas e interacciones visuales.",
-                    Description = "Citizens permite colocar aldeanos y personajes no jugadores personalizables que responden a clics de jugadores.",
-                    DownloadsCount = 12000000,
-                    SourceName = "CurseForge",
-                    Category = MarketplaceCategory.Plugin,
-                    SubCategory = "Juegos",
-                    JarFileName = "Citizens-2.0.33.jar",
-                    CompatibleVersions = new() { "1.20.4", "1.20.2" },
-                    CompatibleLoaders = new() { "Paper", "Spigot", "Purpur" }
-                },
-                new MarketplaceItem
-                {
                     Title = "Sodium",
                     Author = "jellysquid3",
                     Summary = "Motor de renderizado de vanguardia que multiplica drásticamente los FPS del cliente y servidor.",
-                    Description = "Sodium reemplaza el motor de renderizado vanilla con algoritmos modernos multihilo para un rendimiento excepcional.",
+                    Description = "Sodium reemplaza el motor de renderizado vanilla con algoritmos modernos multihilo.",
+                    IconUrl = "https://cdn.modrinth.com/assets/modrinth.png",
                     DownloadsCount = 48000000,
                     SourceName = "Modrinth",
                     Category = MarketplaceCategory.Mod,
@@ -415,34 +394,6 @@ namespace Zenith.Core.Services
                     JarFileName = "sodium-fabric-0.5.8+mc1.20.4.jar",
                     CompatibleVersions = new() { "1.20.4", "1.20.2", "1.19.4" },
                     CompatibleLoaders = new() { "Fabric" }
-                },
-                new MarketplaceItem
-                {
-                    Title = "Lithium",
-                    Author = "jellysquid3",
-                    Summary = "Optimización masiva para la física de bloques, IA de mobs y simulación de Chunks.",
-                    Description = "Lithium optimiza los sistemas internos del servidor sin modificar ninguna mecánica de juego.",
-                    DownloadsCount = 31000000,
-                    SourceName = "CurseForge",
-                    Category = MarketplaceCategory.Mod,
-                    SubCategory = "Rendimiento",
-                    JarFileName = "lithium-fabric-mc1.20.4-0.12.1.jar",
-                    CompatibleVersions = new() { "1.20.4", "1.20.2" },
-                    CompatibleLoaders = new() { "Fabric" }
-                },
-                new MarketplaceItem
-                {
-                    Title = "FerriteCore",
-                    Author = "malte0811",
-                    Summary = "Reducción agresiva del consumo de memoria RAM del servidor y cliente.",
-                    Description = "FerriteCore aplica técnicas avanzadas de compresión en estructuras de datos.",
-                    DownloadsCount = 22000000,
-                    SourceName = "Modrinth",
-                    Category = MarketplaceCategory.Mod,
-                    SubCategory = "Rendimiento",
-                    JarFileName = "ferritecore-6.0.1-fabric.jar",
-                    CompatibleVersions = new() { "1.20.4", "1.20.2" },
-                    CompatibleLoaders = new() { "Fabric", "Forge" }
                 }
             };
         }

@@ -11,12 +11,33 @@ namespace Zenith.Core.Models
 
     public class MarketplaceItem
     {
+        private string _iconUrl = string.Empty;
+
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         public string Title { get; set; } = string.Empty;
         public string Author { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string IconUrl { get; set; } = string.Empty;
+
+        public string IconUrl
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(_iconUrl)) return _iconUrl;
+
+                // Fallback brand icons based on SourceName
+                if (SourceName.Equals("Modrinth", StringComparison.OrdinalIgnoreCase))
+                    return "https://cdn.modrinth.com/assets/modrinth.png";
+                if (SourceName.Equals("Spigot", StringComparison.OrdinalIgnoreCase))
+                    return "https://static.spigotmc.org/img/spigot-icon.png";
+                if (SourceName.Equals("Bukkit", StringComparison.OrdinalIgnoreCase))
+                    return "https://media.forgecdn.net/avatars/6/824/636125027582046830.png";
+
+                return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            }
+            set => _iconUrl = value;
+        }
+
         public List<string> Screenshots { get; set; } = new();
         public long DownloadsCount { get; set; }
         public string SourceName { get; set; } = "Modrinth"; // Modrinth, Spigot, Bukkit, CurseForge

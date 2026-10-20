@@ -13,6 +13,11 @@ namespace Zenith.Core.Services
         public long SizeBytes { get; set; }
         public string FormattedSize => $"{SizeBytes / 1024.0 / 1024.0:F2} MB";
         public DateTime LastModified { get; set; }
+
+        public bool HasUpdate { get; set; }
+        public string LatestVersion { get; set; } = string.Empty;
+        public string DownloadUrl { get; set; } = string.Empty;
+        public string IconUrl { get; set; } = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
     }
 
     public class PluginModManagerService
@@ -41,7 +46,8 @@ namespace Zenith.Core.Services
                     FullPath = fi.FullName,
                     IsEnabled = !fi.Name.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase),
                     SizeBytes = fi.Length,
-                    LastModified = fi.LastWriteTime
+                    LastModified = fi.LastWriteTime,
+                    IconUrl = isPluginMode ? "https://static.spigotmc.org/img/spigot-icon.png" : "https://cdn.modrinth.com/assets/modrinth.png"
                 });
             }
 
