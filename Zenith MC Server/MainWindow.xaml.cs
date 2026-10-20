@@ -101,7 +101,43 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Live Customization & Theme Controls
+        #region Live Customization & Theme Controls (Oscuro, Claro, Transparente)
+
+        private void CmbAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbAppTheme?.SelectedItem is ComboBoxItem item)
+            {
+                string choice = item.Content.ToString() ?? "";
+
+                if (choice.Contains("Claro"))
+                {
+                    // Light Theme Mode
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 243, 244, 246));
+                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 229, 231, 235));
+                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 17, 24, 39));
+                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 55, 65, 81));
+                    this.SystemBackdrop = null;
+                }
+                else if (choice.Contains("Transparente"))
+                {
+                    // Transparent Acrylic Glass Mode
+                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(120, 17, 11, 24));
+                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(160, 26, 16, 36));
+                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
+                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+                }
+                else
+                {
+                    // Dark Mode (Dark Studio)
+                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
+                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 26, 16, 36));
+                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
+                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+                }
+            }
+        }
 
         private void CmbAccentColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -117,16 +153,10 @@ namespace Zenith_MC_Server
 
                 var accentBrush = new SolidColorBrush(accentColor);
 
-                // Update primary action buttons live across all views
                 if (BtnSendCommand != null) BtnSendCommand.Background = accentBrush;
                 if (BtnSaveFileContent != null) BtnSaveFileContent.Background = accentBrush;
                 if (BtnDetailInstall != null) BtnDetailInstall.Background = accentBrush;
-
-                // Update brand badge live
-                if (AppTitleBar != null && AppTitleBar.Children.Count > 0 && AppTitleBar.Children[0] is StackPanel brandPanel && brandPanel.Children.Count > 0 && brandPanel.Children[0] is Border brandLogoBorder)
-                {
-                    brandLogoBorder.Background = accentBrush;
-                }
+                if (BrandLogoBorder != null) BrandLogoBorder.Background = accentBrush;
             }
         }
 
@@ -138,24 +168,36 @@ namespace Zenith_MC_Server
                 if (choice.Contains("DesktopAcrylic"))
                 {
                     this.SystemBackdrop = new DesktopAcrylicBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 17, 11, 24));
                 }
                 else if (choice.Contains("Mica"))
                 {
                     this.SystemBackdrop = new MicaBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 15, 10, 20));
                 }
                 else
                 {
                     this.SystemBackdrop = null;
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 18, 18, 26));
                 }
+            }
+        }
+
+        private void CmbConsoleBg_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbConsoleBg?.SelectedItem is ComboBoxItem item && ConsoleContainerBorder != null)
+            {
+                string choice = item.Content.ToString() ?? "";
+                Color bgCol = Color.FromArgb(255, 20, 12, 29);
+
+                if (choice.Contains("Negro")) bgCol = Color.FromArgb(255, 0, 0, 0);
+                else if (choice.Contains("Gris")) bgCol = Color.FromArgb(255, 26, 26, 26);
+                else if (choice.Contains("Azul")) bgCol = Color.FromArgb(255, 15, 23, 42);
+
+                ConsoleContainerBorder.Background = new SolidColorBrush(bgCol);
             }
         }
 
         private void CmbConsoleColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (CmbConsoleColor?.SelectedItem is ComboBoxItem item)
+            if (CmbConsoleColor?.SelectedItem is ComboBoxItem item && TxtConsoleLog != null)
             {
                 string choice = item.Content.ToString() ?? "";
                 Color textCol = Color.FromArgb(255, 56, 189, 248);
@@ -164,7 +206,7 @@ namespace Zenith_MC_Server
                 else if (choice.Contains("Amarillo")) textCol = Color.FromArgb(255, 250, 204, 21);
                 else if (choice.Contains("Blanco")) textCol = Color.FromArgb(255, 255, 255, 255);
 
-                if (TxtConsoleLog != null) TxtConsoleLog.Foreground = new SolidColorBrush(textCol);
+                TxtConsoleLog.Foreground = new SolidColorBrush(textCol);
             }
         }
 
@@ -174,6 +216,45 @@ namespace Zenith_MC_Server
             {
                 string fontFamily = item.Content.ToString() ?? "Consolas";
                 TxtConsoleLog.FontFamily = new FontFamily(fontFamily);
+            }
+        }
+
+        private void CmbEditorBg_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbEditorBg?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
+            {
+                string choice = item.Content.ToString() ?? "";
+                Color bgCol = Color.FromArgb(255, 30, 20, 40);
+
+                if (choice.Contains("Negro")) bgCol = Color.FromArgb(255, 18, 18, 18);
+                else if (choice.Contains("Azul")) bgCol = Color.FromArgb(255, 30, 30, 46);
+                else if (choice.Contains("Blanco")) bgCol = Color.FromArgb(255, 248, 250, 252);
+
+                TxtCodeEditor.Background = new SolidColorBrush(bgCol);
+            }
+        }
+
+        private void CmbEditorFg_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbEditorFg?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
+            {
+                string choice = item.Content.ToString() ?? "";
+                Color fgCol = Color.FromArgb(255, 226, 232, 240);
+
+                if (choice.Contains("Verde")) fgCol = Color.FromArgb(255, 74, 222, 128);
+                else if (choice.Contains("Azul")) fgCol = Color.FromArgb(255, 56, 189, 248);
+                else if (choice.Contains("Negro")) fgCol = Color.FromArgb(255, 15, 23, 42);
+
+                TxtCodeEditor.Foreground = new SolidColorBrush(fgCol);
+            }
+        }
+
+        private void CmbEditorFont_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbEditorFont?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
+            {
+                string fontFamily = item.Content.ToString() ?? "Consolas";
+                TxtCodeEditor.FontFamily = new FontFamily(fontFamily);
             }
         }
 
