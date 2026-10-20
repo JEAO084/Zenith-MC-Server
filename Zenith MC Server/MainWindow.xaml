@@ -34,17 +34,49 @@
         <!-- Navigation View -->
         <NavigationView x:Name="NavView" Grid.Row="1" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Servidores" Tag="Dashboard" Icon="AllApps"/>
-                <NavigationViewItem Content="Crear Servidor" Tag="Wizard" Icon="Add"/>
-                <NavigationViewItem Content="Consola en Vivo" Tag="Console" Icon="Console"/>
-                <NavigationViewItem Content="Marketplace" Tag="Marketplace" Icon="Shop"/>
-                <NavigationViewItem Content="Explorador de Archivos" Tag="FileExplorer" Icon="Folder"/>
-                <NavigationViewItem Content="Editor de Configuración" Tag="ConfigEditor" Icon="Edit"/>
+                <NavigationViewItem Content="Servidores" Tag="Dashboard">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="AllApps"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Crear Servidor" Tag="Wizard">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Add"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Consola en Vivo" Tag="Console">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE756;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Marketplace" Tag="Marketplace">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Shop"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Explorador de Archivos" Tag="FileExplorer">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Folder"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Editor de Configuración" Tag="ConfigEditor">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Edit"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Content="Personalización" Tag="Appearance" Icon="Color"/>
-                <NavigationViewItem Content="Ajustes Generales" Tag="Settings" Icon="Setting"/>
+                <NavigationViewItem Content="Personalización" Tag="Appearance">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE790;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Ajustes Generales" Tag="Settings">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
             <Frame x:Name="ContentFrame"/>
