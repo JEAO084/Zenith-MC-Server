@@ -7,6 +7,7 @@ namespace Zenith.Core.Models
     {
         public string Name { get; set; } = string.Empty;
         public string FullPath { get; set; } = string.Empty;
+        public string RelativePath { get; set; } = string.Empty;
         public bool IsDirectory { get; set; }
         public long SizeBytes { get; set; }
         public string FormattedSize => IsDirectory ? "<CARPETA>" : $"{SizeBytes / 1024.0:F1} KB";
@@ -19,14 +20,15 @@ namespace Zenith.Core.Models
             {
                 Name = dirInfo.Name,
                 FullPath = dirInfo.FullName,
+                RelativePath = dirInfo.Name,
                 IsDirectory = true
             };
 
-            PopulateChildren(rootNode, dirInfo);
+            PopulateChildren(rootNode, dirInfo, rootPath);
             return rootNode;
         }
 
-        private static void PopulateChildren(FileTreeNode parentNode, DirectoryInfo dirInfo)
+        private static void PopulateChildren(FileTreeNode parentNode, DirectoryInfo dirInfo, string rootPath)
         {
             try
             {
@@ -36,10 +38,11 @@ namespace Zenith.Core.Models
                     {
                         Name = dir.Name,
                         FullPath = dir.FullName,
+                        RelativePath = Path.GetRelativePath(rootPath, dir.FullName),
                         IsDirectory = true
                     };
                     parentNode.Children.Add(childDirNode);
-                    PopulateChildren(childDirNode, dir);
+                    PopulateChildren(childDirNode, dir, rootPath);
                 }
 
                 foreach (var file in dirInfo.GetFiles())
@@ -48,6 +51,7 @@ namespace Zenith.Core.Models
                     {
                         Name = file.Name,
                         FullPath = file.FullName,
+                        RelativePath = Path.GetRelativePath(rootPath, file.FullName),
                         IsDirectory = false,
                         SizeBytes = file.Length
                     });
