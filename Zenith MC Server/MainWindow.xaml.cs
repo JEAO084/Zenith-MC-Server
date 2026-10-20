@@ -285,7 +285,7 @@ namespace Zenith_MC_Server
             SwitchToView("Wizard");
         }
 
-        private void LoadActiveServerUI()
+        private async void LoadActiveServerUI()
         {
             if (_serverManager == null || _configService == null) return;
             var profile = _serverManager.ActiveProfile;
@@ -315,8 +315,8 @@ namespace Zenith_MC_Server
             LoadEngineConfigs();
             RefreshInstalledPluginsList();
             RefreshInstalledModsList();
-            RefreshMarketplacePluginCatalog();
-            RefreshMarketplaceModCatalog();
+            await RefreshMarketplacePluginCatalogAsync();
+            await RefreshMarketplaceModCatalogAsync();
         }
 
         #endregion
@@ -338,7 +338,7 @@ namespace Zenith_MC_Server
             if (ViewLauncherSettings != null) ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        private async void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             if (args.SelectedItemContainer is NavigationViewItem selectedItem)
             {
@@ -352,11 +352,11 @@ namespace Zenith_MC_Server
                 }
                 else if (tag == "DownloadPlugins")
                 {
-                    RefreshMarketplacePluginCatalog();
+                    await RefreshMarketplacePluginCatalogAsync();
                 }
                 else if (tag == "DownloadMods")
                 {
-                    RefreshMarketplaceModCatalog();
+                    await RefreshMarketplaceModCatalogAsync();
                 }
                 else if (tag == "InstalledPlugins")
                 {
@@ -715,7 +715,7 @@ namespace Zenith_MC_Server
 
         #region Marketplace & Installed Plugins / Mods
 
-        private void RefreshMarketplacePluginCatalog()
+        private async Task RefreshMarketplacePluginCatalogAsync()
         {
             if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadPlugins == null) return;
             string ver = (CmbPluginVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
@@ -727,11 +727,11 @@ namespace Zenith_MC_Server
             string search = TxtPluginSearch?.Text ?? "";
             string sort = (CmbPluginSort != null && CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category);
+            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category);
             GrdDownloadPlugins.ItemsSource = items;
         }
 
-        private void RefreshMarketplaceModCatalog()
+        private async Task RefreshMarketplaceModCatalogAsync()
         {
             if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadMods == null) return;
             string ver = (CmbModVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
@@ -743,21 +743,21 @@ namespace Zenith_MC_Server
             string search = TxtModSearch?.Text ?? "";
             string sort = (CmbModSort != null && CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
-            var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Mod, ver, loader, source, search, sort, category);
+            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Mod, ver, loader, source, search, sort, category);
             GrdDownloadMods.ItemsSource = items;
         }
 
-        private void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
-        private void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
-        private void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
-        private void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplacePluginCatalog();
-        private void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplacePluginCatalog();
+        private async void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
+        private async void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
+        private async void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
+        private async void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
+        private async void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplacePluginCatalogAsync();
 
-        private void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
-        private void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
-        private void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
-        private void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) => RefreshMarketplaceModCatalog();
-        private void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshMarketplaceModCatalog();
+        private async void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
+        private async void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
+        private async void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
+        private async void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
+        private async void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) => await RefreshMarketplaceModCatalogAsync();
 
         private void GrdDownloadPlugins_ItemClick(object sender, ItemClickEventArgs e)
         {
