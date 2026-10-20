@@ -101,22 +101,32 @@ namespace Zenith_MC_Server
 
         #endregion
 
-        #region Customization & Theme Controls
+        #region Live Customization & Theme Controls
 
         private void CmbAccentColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CmbAccentColor?.SelectedItem is ComboBoxItem item)
             {
                 string choice = item.Content.ToString() ?? "";
-                Color color = Color.FromArgb(255, 124, 58, 237); // Default Purple
+                Color accentColor = Color.FromArgb(255, 124, 58, 237); // Default Purple (#7C3AED)
 
-                if (choice.Contains("Azul")) color = Color.FromArgb(255, 2, 132, 199);
-                else if (choice.Contains("Verde")) color = Color.FromArgb(255, 16, 185, 129);
-                else if (choice.Contains("Rojo")) color = Color.FromArgb(255, 225, 29, 72);
-                else if (choice.Contains("Naranja")) color = Color.FromArgb(255, 245, 158, 11);
+                if (choice.Contains("Azul")) accentColor = Color.FromArgb(255, 2, 132, 199);       // #0284C7
+                else if (choice.Contains("Verde")) accentColor = Color.FromArgb(255, 16, 185, 129);  // #10B981
+                else if (choice.Contains("Rojo")) accentColor = Color.FromArgb(255, 225, 29, 72);    // #E11D48
+                else if (choice.Contains("Naranja")) accentColor = Color.FromArgb(255, 245, 158, 11); // #F59E0B
 
-                if (BtnSendCommand != null) BtnSendCommand.Background = new SolidColorBrush(color);
-                if (BtnSaveFileContent != null) BtnSaveFileContent.Background = new SolidColorBrush(color);
+                var accentBrush = new SolidColorBrush(accentColor);
+
+                // Update primary action buttons live across all views
+                if (BtnSendCommand != null) BtnSendCommand.Background = accentBrush;
+                if (BtnSaveFileContent != null) BtnSaveFileContent.Background = accentBrush;
+                if (BtnDetailInstall != null) BtnDetailInstall.Background = accentBrush;
+
+                // Update brand badge live
+                if (AppTitleBar != null && AppTitleBar.Children.Count > 0 && AppTitleBar.Children[0] is StackPanel brandPanel && brandPanel.Children.Count > 0 && brandPanel.Children[0] is Border brandLogoBorder)
+                {
+                    brandLogoBorder.Background = accentBrush;
+                }
             }
         }
 
@@ -128,12 +138,12 @@ namespace Zenith_MC_Server
                 if (choice.Contains("DesktopAcrylic"))
                 {
                     this.SystemBackdrop = new DesktopAcrylicBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 17, 11, 24));
                 }
                 else if (choice.Contains("Mica"))
                 {
                     this.SystemBackdrop = new MicaBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 15, 10, 20));
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(200, 15, 10, 20);
                 }
                 else
                 {
