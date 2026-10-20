@@ -356,9 +356,9 @@
                         <TextBlock Text="Ajustes de Hardware, RAM, Parámetros JVM, server.properties completo, eula.txt, spigot.yml y paper.yml." FontSize="12" Foreground="#BBBBBB"/>
                     </StackPanel>
 
-                    <Pivot Grid.Row="1">
+                    <TabView Grid.Row="1" IsAddTabButtonVisible="False">
                         <!-- Tab 1: Hardware & Execution Settings -->
-                        <PivotItem Header="Hardware y Ejecución">
+                        <TabViewItem Header="Hardware y Ejecución" IsClosable="False">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="16" Margin="0,12,0,0">
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
@@ -397,10 +397,10 @@
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>
-                        </PivotItem>
+                        </TabViewItem>
 
                         <!-- Tab 2: Extended server.properties -->
-                        <PivotItem Header="server.properties Completo">
+                        <TabViewItem Header="server.properties Completo" IsClosable="False">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="16" Margin="0,12,0,0">
                                     <Border Background="#2212121F" CornerRadius="12" Padding="16" BorderBrush="#33FFFFFF" BorderThickness="1">
@@ -529,10 +529,10 @@
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>
-                        </PivotItem>
+                        </TabViewItem>
 
                         <!-- Tab 3: paper-global.yml -->
-                        <PivotItem Header="paper-global.yml">
+                        <TabViewItem Header="paper-global.yml" IsClosable="False">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
@@ -541,10 +541,10 @@
                                 <TextBox x:Name="TxtPaperConfigEditor" AcceptsReturn="True" FontFamily="Consolas" FontSize="13" Background="#120D18" Foreground="#E2E8F0"/>
                                 <Button Grid.Row="1" Content="Guardar paper-global.yml" Click="BtnSavePaperConfig_Click" Background="#7C3AED" Foreground="White" Margin="0,8,0,0" HorizontalAlignment="Right"/>
                             </Grid>
-                        </PivotItem>
+                        </TabViewItem>
 
                         <!-- Tab 4: spigot.yml -->
-                        <PivotItem Header="spigot.yml">
+                        <TabViewItem Header="spigot.yml" IsClosable="False">
                             <Grid Margin="0,12,0,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
@@ -553,8 +553,8 @@
                                 <TextBox x:Name="TxtSpigotConfigEditor" AcceptsReturn="True" FontFamily="Consolas" FontSize="13" Background="#120D18" Foreground="#E2E8F0"/>
                                 <Button Grid.Row="1" Content="Guardar spigot.yml" Click="BtnSaveSpigotConfig_Click" Background="#7C3AED" Foreground="White" Margin="0,8,0,0" HorizontalAlignment="Right"/>
                             </Grid>
-                        </PivotItem>
-                    </Pivot>
+                        </TabViewItem>
+                    </TabView>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,12,0,0">
                         <Button Content="Recargar Propiedades" Click="BtnReloadConfig_Click" CornerRadius="6" Padding="16,8"/>

@@ -73,7 +73,7 @@ namespace Zenith_MC_Server
 
         private void RefreshServerProfilesUI()
         {
-            if (_serverManager == null) return;
+            if (_serverManager == null || CmbServerSelector == null) return;
             var profiles = _serverManager.GetProfiles();
             CmbServerSelector.ItemsSource = profiles;
             if (_serverManager.ActiveProfile != null)
@@ -84,7 +84,7 @@ namespace Zenith_MC_Server
 
         private void CmbServerSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_serverManager != null && CmbServerSelector.SelectedItem is ServerProfile profile)
+            if (_serverManager != null && CmbServerSelector?.SelectedItem is ServerProfile profile)
             {
                 _serverManager.SelectProfile(profile.Id);
                 LoadActiveServerUI();
@@ -98,16 +98,19 @@ namespace Zenith_MC_Server
 
         private async Task LoadWizardVersionsAsync()
         {
-            if (_downloadService == null) return;
+            if (_downloadService == null || WzdChkSnapshots == null || WzdCmbVersion == null) return;
             bool showSnapshots = WzdChkSnapshots.IsChecked == true;
             _wizardMojangVersions = await _downloadService.GetMojangVersionsAsync(showSnapshots);
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                WzdCmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
-                if (WzdCmbVersion.Items.Count > 0)
+                if (WzdCmbVersion != null)
                 {
-                    WzdCmbVersion.SelectedIndex = 0;
+                    WzdCmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
+                    if (WzdCmbVersion.Items.Count > 0)
+                    {
+                        WzdCmbVersion.SelectedIndex = 0;
+                    }
                 }
             });
         }
@@ -119,33 +122,42 @@ namespace Zenith_MC_Server
 
         private void WzdCmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_downloadService == null) return;
+            if (_downloadService == null || WzdCmbVersion == null) return;
             if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
             {
                 var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
                 int reqJava = _downloadService.GetRecommendedJavaVersion(ver.Id);
 
-                WzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
+                if (WzdTxtJavaRequirement != null)
+                {
+                    WzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
+                }
 
                 var installedJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava && File.Exists(j.InstalledPath));
-                if (installedJava != null)
+                if (WzdTxtJavaStatus != null)
                 {
-                    WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} detectado e instalado localmente.";
-                }
-                else
-                {
-                    WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} no detectado. Se descargará e instalará automáticamente.";
+                    if (installedJava != null)
+                    {
+                        WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} detectado e instalado localmente.";
+                    }
+                    else
+                    {
+                        WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} no detectado. Se descargará e instalará automáticamente.";
+                    }
                 }
 
                 var loaders = _downloadService.GetCompatibleLoadersForVersion(ver.Id);
-                WzdCmbLoader.ItemsSource = loaders;
-                if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
+                if (WzdCmbLoader != null)
+                {
+                    WzdCmbLoader.ItemsSource = loaders;
+                    if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
+                }
             }
         }
 
         private async void BtnFinishWizard_Click(object sender, RoutedEventArgs e)
         {
-            if (_serverManager == null || _downloadService == null) return;
+            if (_serverManager == null || _downloadService == null || BtnFinishWizard == null || WzdProgressBar == null) return;
 
             // Prevent double-click creation
             BtnFinishWizard.IsEnabled = false;
@@ -154,47 +166,50 @@ namespace Zenith_MC_Server
 
             try
             {
-                string name = WzdServerName.Text.Trim();
+                string name = WzdServerName?.Text.Trim() ?? "Nuevo Servidor";
                 if (string.IsNullOrWhiteSpace(name)) name = "Nuevo Servidor";
 
                 string icon = "⛏️";
-                if (WzdServerIcon.SelectedItem is ComboBoxItem iconItem)
+                if (WzdServerIcon?.SelectedItem is ComboBoxItem iconItem)
                 {
                     icon = iconItem.Content.ToString()?.Split(' ')[0] ?? "⛏️";
                 }
 
                 string version = "1.20.4";
-                if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
+                if (WzdCmbVersion != null && WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
                 {
                     version = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
                 }
 
                 string loader = "Paper";
-                if (WzdCmbLoader.SelectedItem != null)
+                if (WzdCmbLoader?.SelectedItem != null)
                 {
                     loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
                 }
 
                 int ramGb = 4;
-                if (WzdCmbRam.SelectedItem is ComboBoxItem ramItem)
+                if (WzdCmbRam?.SelectedItem is ComboBoxItem ramItem)
                 {
                     int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
                 }
 
                 int port = 25565;
-                int.TryParse(WzdTxtPort.Text.Trim(), out port);
+                if (WzdTxtPort != null)
+                {
+                    int.TryParse(WzdTxtPort.Text.Trim(), out port);
+                }
 
                 // 1. Create Server Instance Profile & Folder
                 string displayName = $"{icon} {name}";
                 var newProfile = _serverManager.CreateProfile(displayName, loader, version, ramGb);
 
                 // 2. Download server.jar for selected loader & version
-                WzdTxtProgressStatus.Text = $"Obteniendo {loader} {version} (server.jar)...";
+                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Obteniendo {loader} {version} (server.jar)...";
                 try
                 {
                     string downloadedJarPath = await _downloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
                     {
-                        DispatcherQueue.TryEnqueue(() => WzdProgressBar.Value = p);
+                        DispatcherQueue.TryEnqueue(() => { if (WzdProgressBar != null) WzdProgressBar.Value = p; });
                     });
 
                     newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
@@ -205,7 +220,7 @@ namespace Zenith_MC_Server
                 }
 
                 // 3. Set Aikar's JVM Flags
-                if (WzdToggleAikarsFlags.IsOn && _configService != null)
+                if (WzdToggleAikarsFlags != null && WzdToggleAikarsFlags.IsOn && _configService != null)
                 {
                     newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
                 }
@@ -221,7 +236,7 @@ namespace Zenith_MC_Server
                     }
                     else
                     {
-                        WzdTxtProgressStatus.Text = $"Instalando JDK Java {reqJava}...";
+                        if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Instalando JDK Java {reqJava}...";
                         try
                         {
                             string downloadedJavaPath = await _javaService!.DownloadAndExtractJavaAsync(javaVerOption);
@@ -234,7 +249,8 @@ namespace Zenith_MC_Server
                 // 5. Save EULA & server.properties
                 if (_configService != null)
                 {
-                    _configService.SetEulaAccepted(newProfile.DirectoryPath, WzdToggleEula.IsOn);
+                    bool eulaAccepted = WzdToggleEula?.IsOn ?? true;
+                    _configService.SetEulaAccepted(newProfile.DirectoryPath, eulaAccepted);
                     var props = _configService.LoadProperties(newProfile.DirectoryPath);
                     props.SetProperty("server-port", port.ToString());
                     props.SetProperty("motd", $"{name} - Servidor Minecraft");
@@ -260,7 +276,7 @@ namespace Zenith_MC_Server
                 BtnFinishWizard.IsEnabled = true;
                 BtnFinishWizard.Content = "🚀 Finalizar y Crear Servidor";
                 WzdProgressBar.Visibility = Visibility.Collapsed;
-                WzdTxtProgressStatus.Text = string.Empty;
+                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = string.Empty;
             }
         }
 
@@ -275,8 +291,8 @@ namespace Zenith_MC_Server
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
-            TxtActiveServerName.Text = $"Servidor: {profile.Name}";
-            TxtActiveSoftware.Text = $"Motor: {profile.SoftwareType} {profile.Version}";
+            if (TxtActiveServerName != null) TxtActiveServerName.Text = $"Servidor: {profile.Name}";
+            if (TxtActiveSoftware != null) TxtActiveSoftware.Text = $"Motor: {profile.SoftwareType} {profile.Version}";
 
             string serverDir = profile.DirectoryPath;
             if (!Directory.Exists(serverDir))
@@ -285,14 +301,14 @@ namespace Zenith_MC_Server
             }
 
             _currentProperties = _configService.LoadProperties(serverDir);
-            TxtActivePort.Text = $"Puerto: {_currentProperties.GetProperty("server-port", "25565")}";
+            if (TxtActivePort != null) TxtActivePort.Text = $"Puerto: {_currentProperties.GetProperty("server-port", "25565")}";
 
             bool isPluginLoader = IsPluginMode();
-            NavItemDownloadPlugins.IsEnabled = isPluginLoader;
-            NavItemInstalledPlugins.IsEnabled = isPluginLoader;
+            if (NavItemDownloadPlugins != null) NavItemDownloadPlugins.IsEnabled = isPluginLoader;
+            if (NavItemInstalledPlugins != null) NavItemInstalledPlugins.IsEnabled = isPluginLoader;
 
-            NavItemDownloadMods.IsEnabled = !isPluginLoader;
-            NavItemInstalledMods.IsEnabled = !isPluginLoader;
+            if (NavItemDownloadMods != null) NavItemDownloadMods.IsEnabled = !isPluginLoader;
+            if (NavItemInstalledMods != null) NavItemInstalledMods.IsEnabled = !isPluginLoader;
 
             LoadConfigurationToUI();
             RefreshFileList();
@@ -309,17 +325,17 @@ namespace Zenith_MC_Server
 
         private void SwitchToView(string tag)
         {
-            ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
-            ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
-            ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
-            ViewDownloadPlugins.Visibility = tag == "DownloadPlugins" ? Visibility.Visible : Visibility.Collapsed;
-            ViewDownloadMods.Visibility = tag == "DownloadMods" ? Visibility.Visible : Visibility.Collapsed;
-            ViewInstalledPlugins.Visibility = tag == "InstalledPlugins" ? Visibility.Visible : Visibility.Collapsed;
-            ViewInstalledMods.Visibility = tag == "InstalledMods" ? Visibility.Visible : Visibility.Collapsed;
-            ViewMarketplaceDetails.Visibility = tag == "MarketplaceDetails" ? Visibility.Visible : Visibility.Collapsed;
-            ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
-            ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
-            ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewDashboard != null) ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewWizard != null) ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewConfig != null) ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewDownloadPlugins != null) ViewDownloadPlugins.Visibility = tag == "DownloadPlugins" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewDownloadMods != null) ViewDownloadMods.Visibility = tag == "DownloadMods" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewInstalledPlugins != null) ViewInstalledPlugins.Visibility = tag == "InstalledPlugins" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewInstalledMods != null) ViewInstalledMods.Visibility = tag == "InstalledMods" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewMarketplaceDetails != null) ViewMarketplaceDetails.Visibility = tag == "MarketplaceDetails" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewFileManager != null) ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewJavaRuntimes != null) ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewLauncherSettings != null) ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -373,10 +389,10 @@ namespace Zenith_MC_Server
         {
             DispatcherQueue.TryEnqueue(() =>
             {
-                StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
-                StatusIndicatorText.Text = isRunning ? "Servidor En Ejecución" : "Servidor Detenido";
-                BtnStartServer.IsEnabled = !isRunning;
-                BtnStopServer.IsEnabled = isRunning;
+                if (StatusIndicatorDot != null) StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
+                if (StatusIndicatorText != null) StatusIndicatorText.Text = isRunning ? "Servidor En Ejecución" : "Servidor Detenido";
+                if (BtnStartServer != null) BtnStartServer.IsEnabled = !isRunning;
+                if (BtnStopServer != null) BtnStopServer.IsEnabled = isRunning;
             });
         }
 
@@ -402,7 +418,7 @@ namespace Zenith_MC_Server
                 }
 
                 string jarPath = Path.GetFileName(jarFiles[0]);
-                TxtActiveSoftware.Text = $"Motor: {jarPath}";
+                if (TxtActiveSoftware != null) TxtActiveSoftware.Text = $"Motor: {jarPath}";
 
                 if (!_configService.CheckEulaAccepted(serverDir))
                 {
@@ -444,7 +460,7 @@ namespace Zenith_MC_Server
 
         private void CmbRamAllocation_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_serverManager != null && _serverManager.ActiveProfile != null && CmbRamAllocation.SelectedItem is ComboBoxItem item)
+            if (_serverManager != null && _serverManager.ActiveProfile != null && CmbRamAllocation?.SelectedItem is ComboBoxItem item)
             {
                 if (int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int parsedRam))
                 {
@@ -461,6 +477,7 @@ namespace Zenith_MC_Server
 
         private void TxtConsoleInput_TextChanged(object sender, TextChangedEventArgs e)
         {
+            if (TxtConsoleInput == null || CmdSuggestionContainer == null) return;
             string query = TxtConsoleInput.Text.Trim().ToLowerInvariant();
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -471,7 +488,7 @@ namespace Zenith_MC_Server
             var matches = _knownMinecraftCommands.Where(c => c.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToList();
             if (matches.Count > 0)
             {
-                LstCmdSuggestions.ItemsSource = matches;
+                if (LstCmdSuggestions != null) LstCmdSuggestions.ItemsSource = matches;
                 CmdSuggestionContainer.Visibility = Visibility.Visible;
             }
             else
@@ -482,10 +499,10 @@ namespace Zenith_MC_Server
 
         private void LstCmdSuggestions_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (LstCmdSuggestions.SelectedItem is string selectedCmd)
+            if (LstCmdSuggestions?.SelectedItem is string selectedCmd)
             {
-                TxtConsoleInput.Text = selectedCmd;
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                if (TxtConsoleInput != null) TxtConsoleInput.Text = selectedCmd;
+                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -495,22 +512,23 @@ namespace Zenith_MC_Server
             {
                 SendConsoleInput();
             }
-            else if (e.Key == Windows.System.VirtualKey.Tab && LstCmdSuggestions.Items.Count > 0)
+            else if (e.Key == Windows.System.VirtualKey.Tab && LstCmdSuggestions != null && LstCmdSuggestions.Items.Count > 0)
             {
-                TxtConsoleInput.Text = LstCmdSuggestions.Items[0].ToString() ?? "";
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                if (TxtConsoleInput != null) TxtConsoleInput.Text = LstCmdSuggestions.Items[0].ToString() ?? "";
+                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
         }
 
         private void SendConsoleInput()
         {
+            if (TxtConsoleInput == null) return;
             string cmd = TxtConsoleInput.Text.Trim();
             if (!string.IsNullOrEmpty(cmd) && _processManager != null)
             {
                 _processManager.SendCommand(cmd);
                 TxtConsoleInput.Text = string.Empty;
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -529,7 +547,7 @@ namespace Zenith_MC_Server
                 AppendConsoleLog($"[Zenith] El servidor se ha detenido con código de salida: {exitCode}");
                 UpdateStatusIndicator(false);
 
-                if (ToggleAutoRestart.IsOn && exitCode != 0)
+                if (ToggleAutoRestart != null && ToggleAutoRestart.IsOn && exitCode != 0)
                 {
                     AppendConsoleLog("[Zenith Auto-Restart] Reiniciando servidor automáticamente en 3 segundos...");
                     Task.Delay(3000).ContinueWith(_ => DispatcherQueue.TryEnqueue(() => BtnStartServer_Click(this, new RoutedEventArgs())));
@@ -539,8 +557,11 @@ namespace Zenith_MC_Server
 
         private void AppendConsoleLog(string message)
         {
-            TxtConsoleLog.Text += $"{message}\n";
-            ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null);
+            if (TxtConsoleLog != null && ConsoleScrollViewer != null)
+            {
+                TxtConsoleLog.Text += $"{message}\n";
+                ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null);
+            }
         }
 
         #endregion
@@ -555,28 +576,28 @@ namespace Zenith_MC_Server
 
             _currentProperties = _configService.LoadProperties(profile.DirectoryPath);
 
-            CfgMotd.Text = _currentProperties.GetProperty("motd", "A Minecraft Server");
-            CfgMaxPlayers.Text = _currentProperties.GetProperty("max-players", "20");
-            CfgServerPort.Text = _currentProperties.GetProperty("server-port", "25565");
+            if (CfgMotd != null) CfgMotd.Text = _currentProperties.GetProperty("motd", "A Minecraft Server");
+            if (CfgMaxPlayers != null) CfgMaxPlayers.Text = _currentProperties.GetProperty("max-players", "20");
+            if (CfgServerPort != null) CfgServerPort.Text = _currentProperties.GetProperty("server-port", "25565");
 
-            CfgViewDistance.Text = _currentProperties.GetProperty("view-distance", "10");
-            CfgSimulationDistance.Text = _currentProperties.GetProperty("simulation-distance", "10");
-            CfgLevelSeed.Text = _currentProperties.GetProperty("level-seed", "");
-            CfgSpawnProtection.Text = _currentProperties.GetProperty("spawn-protection", "16");
+            if (CfgViewDistance != null) CfgViewDistance.Text = _currentProperties.GetProperty("view-distance", "10");
+            if (CfgSimulationDistance != null) CfgSimulationDistance.Text = _currentProperties.GetProperty("simulation-distance", "10");
+            if (CfgLevelSeed != null) CfgLevelSeed.Text = _currentProperties.GetProperty("level-seed", "");
+            if (CfgSpawnProtection != null) CfgSpawnProtection.Text = _currentProperties.GetProperty("spawn-protection", "16");
 
-            SelectComboByContent(CfgGamemode, _currentProperties.GetProperty("gamemode", "survival"));
-            SelectComboByContent(CfgDifficulty, _currentProperties.GetProperty("difficulty", "easy"));
+            if (CfgGamemode != null) SelectComboByContent(CfgGamemode, _currentProperties.GetProperty("gamemode", "survival"));
+            if (CfgDifficulty != null) SelectComboByContent(CfgDifficulty, _currentProperties.GetProperty("difficulty", "easy"));
 
-            CfgOnlineMode.IsOn = _currentProperties.GetProperty("online-mode", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgPvp.IsOn = _currentProperties.GetProperty("pvp", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgAllowFlight.IsOn = _currentProperties.GetProperty("allow-flight", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgCommandBlocks.IsOn = _currentProperties.GetProperty("enable-command-block", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            CfgHardcore.IsOn = _currentProperties.GetProperty("hardcore", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (CfgOnlineMode != null) CfgOnlineMode.IsOn = _currentProperties.GetProperty("online-mode", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (CfgPvp != null) CfgPvp.IsOn = _currentProperties.GetProperty("pvp", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (CfgAllowFlight != null) CfgAllowFlight.IsOn = _currentProperties.GetProperty("allow-flight", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (CfgCommandBlocks != null) CfgCommandBlocks.IsOn = _currentProperties.GetProperty("enable-command-block", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
+            if (CfgHardcore != null) CfgHardcore.IsOn = _currentProperties.GetProperty("hardcore", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
 
-            ToggleEula.IsOn = _configService.CheckEulaAccepted(profile.DirectoryPath);
+            if (ToggleEula != null) ToggleEula.IsOn = _configService.CheckEulaAccepted(profile.DirectoryPath);
 
-            TxtServerCustomJavaExe.Text = profile.JavaExecutablePath;
-            TxtCustomJvmArgs.Text = profile.CustomJvmArgs;
+            if (TxtServerCustomJavaExe != null) TxtServerCustomJavaExe.Text = profile.JavaExecutablePath;
+            if (TxtCustomJvmArgs != null) TxtCustomJvmArgs.Text = profile.CustomJvmArgs;
         }
 
         private void LoadEngineConfigs()
@@ -586,10 +607,10 @@ namespace Zenith_MC_Server
             if (profile == null) return;
 
             var paperCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "paper-global.yml", "# Paper Global Configuration\nverbose: false\nconfig-version: 28\n");
-            TxtPaperConfigEditor.Text = paperCfg.Content;
+            if (TxtPaperConfigEditor != null) TxtPaperConfigEditor.Text = paperCfg.Content;
 
             var spigotCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "spigot.yml", "# Spigot Configuration File\nconfig-version: 12\nsettings:\n  bungeecord: false\n");
-            TxtSpigotConfigEditor.Text = spigotCfg.Content;
+            if (TxtSpigotConfigEditor != null) TxtSpigotConfigEditor.Text = spigotCfg.Content;
         }
 
         private void SelectComboByContent(ComboBox combo, string val)
@@ -607,7 +628,7 @@ namespace Zenith_MC_Server
 
         private void BtnApplyAikarsFlags_Click(object sender, RoutedEventArgs e)
         {
-            if (_serverManager?.ActiveProfile != null && _configService != null)
+            if (_serverManager?.ActiveProfile != null && _configService != null && TxtCustomJvmArgs != null)
             {
                 int ram = _serverManager.ActiveProfile.AllocatedRamGb;
                 TxtCustomJvmArgs.Text = _configService.GetAikarsJvmFlags(ram);
@@ -620,45 +641,45 @@ namespace Zenith_MC_Server
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
-            _currentProperties.SetProperty("motd", CfgMotd.Text);
-            _currentProperties.SetProperty("max-players", CfgMaxPlayers.Text);
-            _currentProperties.SetProperty("server-port", CfgServerPort.Text);
+            if (CfgMotd != null) _currentProperties.SetProperty("motd", CfgMotd.Text);
+            if (CfgMaxPlayers != null) _currentProperties.SetProperty("max-players", CfgMaxPlayers.Text);
+            if (CfgServerPort != null) _currentProperties.SetProperty("server-port", CfgServerPort.Text);
 
-            _currentProperties.SetProperty("view-distance", CfgViewDistance.Text);
-            _currentProperties.SetProperty("simulation-distance", CfgSimulationDistance.Text);
-            _currentProperties.SetProperty("level-seed", CfgLevelSeed.Text);
-            _currentProperties.SetProperty("spawn-protection", CfgSpawnProtection.Text);
+            if (CfgViewDistance != null) _currentProperties.SetProperty("view-distance", CfgViewDistance.Text);
+            if (CfgSimulationDistance != null) _currentProperties.SetProperty("simulation-distance", CfgSimulationDistance.Text);
+            if (CfgLevelSeed != null) _currentProperties.SetProperty("level-seed", CfgLevelSeed.Text);
+            if (CfgSpawnProtection != null) _currentProperties.SetProperty("spawn-protection", CfgSpawnProtection.Text);
 
-            if (CfgGamemode.SelectedItem is ComboBoxItem gmItem)
+            if (CfgGamemode?.SelectedItem is ComboBoxItem gmItem)
             {
                 _currentProperties.SetProperty("gamemode", gmItem.Content.ToString() ?? "survival");
             }
 
-            if (CfgDifficulty.SelectedItem is ComboBoxItem diffItem)
+            if (CfgDifficulty?.SelectedItem is ComboBoxItem diffItem)
             {
                 _currentProperties.SetProperty("difficulty", diffItem.Content.ToString() ?? "easy");
             }
 
-            _currentProperties.SetProperty("online-mode", CfgOnlineMode.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("pvp", CfgPvp.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("allow-flight", CfgAllowFlight.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("enable-command-block", CfgCommandBlocks.IsOn.ToString().ToLower());
-            _currentProperties.SetProperty("hardcore", CfgHardcore.IsOn.ToString().ToLower());
+            if (CfgOnlineMode != null) _currentProperties.SetProperty("online-mode", CfgOnlineMode.IsOn.ToString().ToLower());
+            if (CfgPvp != null) _currentProperties.SetProperty("pvp", CfgPvp.IsOn.ToString().ToLower());
+            if (CfgAllowFlight != null) _currentProperties.SetProperty("allow-flight", CfgAllowFlight.IsOn.ToString().ToLower());
+            if (CfgCommandBlocks != null) _currentProperties.SetProperty("enable-command-block", CfgCommandBlocks.IsOn.ToString().ToLower());
+            if (CfgHardcore != null) _currentProperties.SetProperty("hardcore", CfgHardcore.IsOn.ToString().ToLower());
 
-            profile.JavaExecutablePath = TxtServerCustomJavaExe.Text.Trim();
-            profile.CustomJvmArgs = TxtCustomJvmArgs.Text.Trim();
+            if (TxtServerCustomJavaExe != null) profile.JavaExecutablePath = TxtServerCustomJavaExe.Text.Trim();
+            if (TxtCustomJvmArgs != null) profile.CustomJvmArgs = TxtCustomJvmArgs.Text.Trim();
             _serverManager.UpdateProfile(profile);
 
             _configService.SaveProperties(profile.DirectoryPath, _currentProperties);
-            _configService.SetEulaAccepted(profile.DirectoryPath, ToggleEula.IsOn);
+            if (ToggleEula != null) _configService.SetEulaAccepted(profile.DirectoryPath, ToggleEula.IsOn);
 
-            TxtActivePort.Text = $"Puerto: {CfgServerPort.Text}";
+            if (TxtActivePort != null && CfgServerPort != null) TxtActivePort.Text = $"Puerto: {CfgServerPort.Text}";
             AppendConsoleLog("[Zenith] Configuración guardada en server.properties y eula.txt");
         }
 
         private void BtnSavePaperConfig_Click(object sender, RoutedEventArgs e)
         {
-            if (_serverManager == null || _configService == null) return;
+            if (_serverManager == null || _configService == null || TxtPaperConfigEditor == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -668,7 +689,7 @@ namespace Zenith_MC_Server
 
         private void BtnSaveSpigotConfig_Click(object sender, RoutedEventArgs e)
         {
-            if (_serverManager == null || _configService == null) return;
+            if (_serverManager == null || _configService == null || TxtSpigotConfigEditor == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -684,7 +705,7 @@ namespace Zenith_MC_Server
 
         private void ToggleEula_Toggled(object sender, RoutedEventArgs e)
         {
-            if (_serverManager != null && _serverManager.ActiveProfile != null && _configService != null)
+            if (_serverManager != null && _serverManager.ActiveProfile != null && _configService != null && ToggleEula != null)
             {
                 _configService.SetEulaAccepted(_serverManager.ActiveProfile.DirectoryPath, ToggleEula.IsOn);
             }
@@ -696,12 +717,12 @@ namespace Zenith_MC_Server
 
         private void RefreshMarketplacePluginCatalog()
         {
-            if (_marketplaceService == null || _serverManager?.ActiveProfile == null) return;
+            if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadPlugins == null) return;
             string ver = _serverManager.ActiveProfile.Version;
             string loader = _serverManager.ActiveProfile.SoftwareType;
-            string source = (CmbPluginSource.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
-            string search = TxtPluginSearch.Text;
-            string sort = (CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
+            string source = (CmbPluginSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
+            string search = TxtPluginSearch?.Text ?? "";
+            string sort = (CmbPluginSort != null && CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
             var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Plugin, ver, loader, source, search, sort);
             GrdDownloadPlugins.ItemsSource = items;
@@ -709,12 +730,12 @@ namespace Zenith_MC_Server
 
         private void RefreshMarketplaceModCatalog()
         {
-            if (_marketplaceService == null || _serverManager?.ActiveProfile == null) return;
+            if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadMods == null) return;
             string ver = _serverManager.ActiveProfile.Version;
             string loader = _serverManager.ActiveProfile.SoftwareType;
-            string source = (CmbModSource.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
-            string search = TxtModSearch.Text;
-            string sort = (CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
+            string source = (CmbModSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
+            string search = TxtModSearch?.Text ?? "";
+            string sort = (CmbModSort != null && CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
 
             var items = _marketplaceService.GetFeaturedItems(MarketplaceCategory.Mod, ver, loader, source, search, sort);
             GrdDownloadMods.ItemsSource = items;
@@ -747,12 +768,12 @@ namespace Zenith_MC_Server
         private void OpenMarketplaceItemDetails(MarketplaceItem item)
         {
             _selectedMarketplaceItem = item;
-            TxtDetailTitle.Text = item.Title;
-            TxtDetailAuthor.Text = $"Autor: {item.Author}";
-            TxtDetailSource.Text = $"Fuente: {item.SourceName}";
-            TxtDetailDownloads.Text = $"Descargas: {item.FormattedDownloads}";
-            TxtDetailSummary.Text = item.Summary;
-            TxtDetailDescription.Text = item.Description;
+            if (TxtDetailTitle != null) TxtDetailTitle.Text = item.Title;
+            if (TxtDetailAuthor != null) TxtDetailAuthor.Text = $"Autor: {item.Author}";
+            if (TxtDetailSource != null) TxtDetailSource.Text = $"Fuente: {item.SourceName}";
+            if (TxtDetailDownloads != null) TxtDetailDownloads.Text = $"Descargas: {item.FormattedDownloads}";
+            if (TxtDetailSummary != null) TxtDetailSummary.Text = item.Summary;
+            if (TxtDetailDescription != null) TxtDetailDescription.Text = item.Description;
 
             SwitchToView("MarketplaceDetails");
         }
@@ -771,7 +792,7 @@ namespace Zenith_MC_Server
 
         private async void BtnDetailInstall_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedMarketplaceItem != null && _serverManager?.ActiveProfile != null && _marketplaceService != null)
+            if (_selectedMarketplaceItem != null && _serverManager?.ActiveProfile != null && _marketplaceService != null && BtnDetailInstall != null)
             {
                 BtnDetailInstall.IsEnabled = false;
                 BtnDetailInstall.Content = "⏳ Instalando...";
@@ -817,14 +838,14 @@ namespace Zenith_MC_Server
 
         private void RefreshInstalledPluginsList()
         {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null || LstInstalledPlugins == null) return;
             var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, true);
             LstInstalledPlugins.ItemsSource = items;
         }
 
         private void RefreshInstalledModsList()
         {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
+            if (_serverManager?.ActiveProfile == null || _pluginModManager == null || LstInstalledMods == null) return;
             var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, false);
             LstInstalledMods.ItemsSource = items;
         }
@@ -916,7 +937,7 @@ namespace Zenith_MC_Server
 
         private void RefreshFileList()
         {
-            if (_serverManager == null || _fileManager == null) return;
+            if (_serverManager == null || _fileManager == null || LstFileItems == null) return;
             var profile = _serverManager.ActiveProfile;
             if (profile == null) return;
 
@@ -931,32 +952,32 @@ namespace Zenith_MC_Server
 
         private void LstFileItems_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_fileManager == null) return;
+            if (_fileManager == null || LstFileItems == null) return;
             if (LstFileItems.SelectedItem is ServerFileItem item)
             {
                 _selectedFileItem = item;
-                TxtEditingFileName.Text = item.Name;
+                if (TxtEditingFileName != null) TxtEditingFileName.Text = item.Name;
 
                 if (!item.IsDirectory)
                 {
                     string content = _fileManager.ReadFileText(item.FullPath);
-                    TxtCodeEditor.Text = content;
-                    TxtFileEditorStatus.Text = $"Editando: {item.RelativePath} ({item.FormattedSize})";
+                    if (TxtCodeEditor != null) TxtCodeEditor.Text = content;
+                    if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Editando: {item.RelativePath} ({item.FormattedSize})";
                 }
                 else
                 {
-                    TxtCodeEditor.Text = "// [Carpeta seleccionada]";
-                    TxtFileEditorStatus.Text = $"Carpeta: {item.RelativePath}";
+                    if (TxtCodeEditor != null) TxtCodeEditor.Text = "// [Carpeta seleccionada]";
+                    if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta: {item.RelativePath}";
                 }
             }
         }
 
         private void BtnSaveFileContent_Click(object sender, RoutedEventArgs e)
         {
-            if (_fileManager != null && _selectedFileItem != null && !_selectedFileItem.IsDirectory)
+            if (_fileManager != null && _selectedFileItem != null && !_selectedFileItem.IsDirectory && TxtCodeEditor != null)
             {
                 _fileManager.SaveFileText(_selectedFileItem.FullPath, TxtCodeEditor.Text);
-                TxtFileEditorStatus.Text = $"¡Guardado exitosamente a las {DateTime.Now:HH:mm:ss}!";
+                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"¡Guardado exitosamente a las {DateTime.Now:HH:mm:ss}!";
                 RefreshFileList();
             }
         }
@@ -978,8 +999,8 @@ namespace Zenith_MC_Server
             if (_fileManager != null && _selectedFileItem != null)
             {
                 _fileManager.DeleteItem(_selectedFileItem.FullPath);
-                TxtCodeEditor.Text = string.Empty;
-                TxtEditingFileName.Text = "Ningún archivo seleccionado";
+                if (TxtCodeEditor != null) TxtCodeEditor.Text = string.Empty;
+                if (TxtEditingFileName != null) TxtEditingFileName.Text = "Ningún archivo seleccionado";
                 _selectedFileItem = null;
                 RefreshFileList();
             }
@@ -991,7 +1012,7 @@ namespace Zenith_MC_Server
 
         private void LoadJavaRuntimesUI()
         {
-            if (_javaService == null) return;
+            if (_javaService == null || LstJavaVersions == null) return;
             var versions = _javaService.GetAvailableJavaVersions();
             LstJavaVersions.ItemsSource = versions;
         }
@@ -1005,38 +1026,38 @@ namespace Zenith_MC_Server
             if (sender is Button btn && btn.Tag is JavaVersionOption option && _javaService != null)
             {
                 btn.IsEnabled = false;
-                JavaDownloadProgress.Visibility = Visibility.Visible;
-                TxtJavaProgressStatus.Text = $"Descargando {option.Name}...";
+                if (JavaDownloadProgress != null) JavaDownloadProgress.Visibility = Visibility.Visible;
+                if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"Descargando {option.Name}...";
 
                 try
                 {
                     string path = await _javaService.DownloadAndExtractJavaAsync(option, p =>
                     {
-                        DispatcherQueue.TryEnqueue(() => JavaDownloadProgress.Value = p);
+                        DispatcherQueue.TryEnqueue(() => { if (JavaDownloadProgress != null) JavaDownloadProgress.Value = p; });
                     });
 
-                    TxtJavaProgressStatus.Text = $"¡Java {option.MajorVersion} instalado correctamente!";
+                    if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"¡Java {option.MajorVersion} instalado correctamente!";
                     LoadJavaRuntimesUI();
                 }
                 catch (Exception ex)
                 {
-                    TxtJavaProgressStatus.Text = $"Error instalando JDK: {ex.Message}";
+                    if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"Error instalando JDK: {ex.Message}";
                 }
                 finally
                 {
                     btn.IsEnabled = true;
-                    JavaDownloadProgress.Visibility = Visibility.Collapsed;
+                    if (JavaDownloadProgress != null) JavaDownloadProgress.Visibility = Visibility.Collapsed;
                 }
             }
         }
 
         private void LoadLauncherSettingsUI()
         {
-            if (_javaService != null)
+            if (_javaService != null && TxtCustomJavaPath != null)
             {
                 TxtCustomJavaPath.Text = _javaService.RuntimesDirectory;
             }
-            if (_serverManager?.ActiveProfile != null)
+            if (_serverManager?.ActiveProfile != null && TxtExternalEditorExecutablePath != null)
             {
                 TxtExternalEditorExecutablePath.Text = _serverManager.ActiveProfile.ExternalEditorPath;
             }
@@ -1044,7 +1065,7 @@ namespace Zenith_MC_Server
 
         private void BtnSaveExternalEditor_Click(object sender, RoutedEventArgs e)
         {
-            if (_serverManager?.ActiveProfile != null)
+            if (_serverManager?.ActiveProfile != null && TxtExternalEditorExecutablePath != null)
             {
                 _serverManager.ActiveProfile.ExternalEditorPath = TxtExternalEditorExecutablePath.Text.Trim();
                 _serverManager.UpdateProfile(_serverManager.ActiveProfile);
