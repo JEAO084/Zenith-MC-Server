@@ -36,7 +36,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Servidores" Tag="Dashboard" Icon="AllApps"/>
                 <NavigationViewItem Content="Crear Servidor" Tag="Wizard" Icon="Add"/>
-                <NavigationViewItem Content="Consola en Vivo" Tag="Console" Icon="Terminal"/>
+                <NavigationViewItem Content="Consola en Vivo" Tag="Console" Icon="Console"/>
                 <NavigationViewItem Content="Marketplace" Tag="Marketplace" Icon="Shop"/>
                 <NavigationViewItem Content="Explorador de Archivos" Tag="FileExplorer" Icon="Folder"/>
                 <NavigationViewItem Content="Editor de Configuración" Tag="ConfigEditor" Icon="Edit"/>
