@@ -72,7 +72,7 @@ namespace Zenith_MC_Server
             _ = LoadWizardVersionsAsync();
         }
 
-        #region Mouse Button 4 & 5 (XButton1 & XButton2) Back/Forward Navigation
+        #region Mouse Button 4 & 5 Navigation
 
         private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
@@ -93,9 +93,77 @@ namespace Zenith_MC_Server
         {
             if (_navigationHistory.Count > 1)
             {
-                _navigationHistory.Pop(); // current view
+                _navigationHistory.Pop();
                 string previousTag = _navigationHistory.Peek();
                 SwitchToView(previousTag, recordHistory: false);
+            }
+        }
+
+        #endregion
+
+        #region Customization & Theme Controls
+
+        private void CmbAccentColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbAccentColor?.SelectedItem is ComboBoxItem item)
+            {
+                string choice = item.Content.ToString() ?? "";
+                Color color = Color.FromArgb(255, 124, 58, 237); // Default Purple
+
+                if (choice.Contains("Azul")) color = Color.FromArgb(255, 2, 132, 199);
+                else if (choice.Contains("Verde")) color = Color.FromArgb(255, 16, 185, 129);
+                else if (choice.Contains("Rojo")) color = Color.FromArgb(255, 225, 29, 72);
+                else if (choice.Contains("Naranja")) color = Color.FromArgb(255, 245, 158, 11);
+
+                if (BtnSendCommand != null) BtnSendCommand.Background = new SolidColorBrush(color);
+                if (BtnSaveFileContent != null) BtnSaveFileContent.Background = new SolidColorBrush(color);
+            }
+        }
+
+        private void CmbBackdropType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbBackdropType?.SelectedItem is ComboBoxItem item)
+            {
+                string choice = item.Content.ToString() ?? "";
+                if (choice.Contains("DesktopAcrylic"))
+                {
+                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
+                }
+                else if (choice.Contains("Mica"))
+                {
+                    this.SystemBackdrop = new MicaBackdrop();
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 15, 10, 20));
+                }
+                else
+                {
+                    this.SystemBackdrop = null;
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 18, 18, 26));
+                }
+            }
+        }
+
+        private void CmbConsoleColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbConsoleColor?.SelectedItem is ComboBoxItem item)
+            {
+                string choice = item.Content.ToString() ?? "";
+                Color textCol = Color.FromArgb(255, 56, 189, 248);
+
+                if (choice.Contains("Verde")) textCol = Color.FromArgb(255, 34, 197, 94);
+                else if (choice.Contains("Amarillo")) textCol = Color.FromArgb(255, 250, 204, 21);
+                else if (choice.Contains("Blanco")) textCol = Color.FromArgb(255, 255, 255, 255);
+
+                if (TxtConsoleLog != null) TxtConsoleLog.Foreground = new SolidColorBrush(textCol);
+            }
+        }
+
+        private void CmbConsoleFont_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbConsoleFont?.SelectedItem is ComboBoxItem item && TxtConsoleLog != null)
+            {
+                string fontFamily = item.Content.ToString() ?? "Consolas";
+                TxtConsoleLog.FontFamily = new FontFamily(fontFamily);
             }
         }
 
@@ -365,6 +433,7 @@ namespace Zenith_MC_Server
             if (ViewMarketplaceDetails != null) ViewMarketplaceDetails.Visibility = tag == "MarketplaceDetails" ? Visibility.Visible : Visibility.Collapsed;
             if (ViewFileManager != null) ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
             if (ViewJavaRuntimes != null) ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
+            if (ViewCustomization != null) ViewCustomization.Visibility = tag == "Customization" ? Visibility.Visible : Visibility.Collapsed;
             if (ViewLauncherSettings != null) ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
         }
 
