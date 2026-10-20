@@ -26,6 +26,8 @@ namespace Zenith_MC_Server.Views
             var servers = app.ServerManager.Servers.ToList();
             ServersListView.ItemsSource = servers;
             EmptyStatePanel.Visibility = servers.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            app.RefreshActiveServerComboBox();
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)

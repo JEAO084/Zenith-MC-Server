@@ -22,13 +22,23 @@ namespace Zenith.Tests
         }
 
         [Fact]
-        public async Task SearchItemsAsync_ReturnsFilteredResults()
+        public async Task SearchItemsAsync_ReturnsFilteredPaginatedResults()
         {
             var service = new MarketplaceService();
-            var results = await service.SearchItemsAsync("vault", MarketplaceCategory.Plugin);
+            var filters = new MarketplaceFilterOptions
+            {
+                Query = "vault",
+                Category = MarketplaceCategory.Plugin,
+                Page = 1,
+                PageSize = 5
+            };
 
-            Assert.NotNull(results);
-            Assert.NotEmpty(results);
+            var result = await service.SearchItemsAsync(filters);
+
+            Assert.NotNull(result);
+            Assert.NotNull(result.Items);
+            Assert.NotEmpty(result.Items);
+            Assert.Equal(1, result.CurrentPage);
         }
 
         [Fact]

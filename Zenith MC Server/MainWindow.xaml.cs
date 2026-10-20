@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Linq;
 using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
@@ -28,6 +29,8 @@ namespace Zenith_MC_Server
         public BackupService BackupService { get; } = new();
         public UpdateService UpdateService { get; } = new();
 
+        public ServerInstance? ActiveServer { get; private set; }
+
         public MainWindow()
         {
             Current = this;
@@ -44,16 +47,63 @@ namespace Zenith_MC_Server
             // Subscribe to appearance changes
             AppearanceService.AppearanceChanged += AppearanceService_AppearanceChanged;
 
+            // Populate Quick Active Server Selector
+            RefreshActiveServerComboBox();
+
             // Navigate to default home page
             NavView.SelectedItem = NavView.MenuItems[0];
             ContentFrame.Navigate(typeof(DashboardPage));
         }
 
-        public void NavigateTo(Type pageType)
+        public void RefreshActiveServerComboBox()
         {
-            if (ContentFrame.CurrentSourcePageType != pageType)
+            var servers = ServerManager.Servers.ToList();
+            ServerSelectComboBox.ItemsSource = servers;
+
+            if (servers.Count > 0)
             {
-                ContentFrame.Navigate(pageType);
+                if (ActiveServer == null || !servers.Any(s => s.Id == ActiveServer.Id))
+                {
+                    ActiveServer = servers[0];
+                }
+                ServerSelectComboBox.SelectedItem = ActiveServer;
+            }
+            else
+            {
+                ActiveServer = null;
+                ServerSelectComboBox.SelectedItem = null;
+            }
+        }
+
+        private void ServerSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ServerSelectComboBox.SelectedItem is ServerInstance selectedServer)
+            {
+                ActiveServer = selectedServer;
+            }
+        }
+
+        public ServerInstance? GetActiveServer()
+        {
+            if (ActiveServer != null && ServerManager.Servers.Any(s => s.Id == ActiveServer.Id))
+            {
+                return ActiveServer;
+            }
+
+            if (ServerManager.Servers.Count > 0)
+            {
+                ActiveServer = ServerManager.Servers[0];
+                return ActiveServer;
+            }
+
+            return null;
+        }
+
+        public void NavigateTo(Type pageType, object? parameter = null)
+        {
+            if (ContentFrame.CurrentSourcePageType != pageType || parameter != null)
+            {
+                ContentFrame.Navigate(pageType, parameter);
             }
         }
 

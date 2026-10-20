@@ -13,45 +13,81 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Spacing="4">
             <TextBlock Text="Marketplace (Plugins y Mods)" FontSize="24" FontWeight="Bold"/>
-            <TextBlock Text="Busca, descarga e instala plugins (.jar) o mods directamente desde Modrinth y Spiget." Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+            <TextBlock Text="Explora, filtra y descarga complementos desde Modrinth y Spiget directamente a tu servidor activo." Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
         </StackPanel>
 
-        <!-- Search Bar & Category Filter -->
-        <Grid Grid.Row="1" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="160"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <!-- Search & Filter Controls -->
+        <StackPanel Grid.Row="1" Spacing="12">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <AutoSuggestBox x:Name="SearchBox" Grid.Column="0" PlaceholderText="Buscar plugins o mods (ej. EssentialsX, Sodium, WorldGuard)..."
-                            QuerySubmitted="SearchBox_QuerySubmitted"/>
-            <ComboBox x:Name="CategoryComboBox" Grid.Column="1" HorizontalAlignment="Stretch" SelectionChanged="CategoryComboBox_SelectionChanged">
-                <ComboBoxItem Content="Plugins" IsSelected="True"/>
-                <ComboBoxItem Content="Mods"/>
-            </ComboBox>
-            <Button Grid.Column="2" Content="Buscar" Style="{StaticResource AccentButtonStyle}" Click="SearchButton_Click"/>
-        </Grid>
+                <AutoSuggestBox x:Name="SearchBox" Grid.Column="0" PlaceholderText="Buscar plugins o mods por nombre o descripción (ej. EssentialsX, Sodium, WorldGuard)..."
+                                QuerySubmitted="SearchBox_QuerySubmitted"/>
+                <Button Grid.Column="1" Content="Buscar" Style="{StaticResource AccentButtonStyle}" Click="SearchButton_Click"/>
+            </Grid>
 
-        <!-- Items Grid / ListView -->
-        <ListView x:Name="ItemsListView" Grid.Row="2" SelectionMode="None">
+            <!-- Advanced Filter Toolbar -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <ComboBox x:Name="CategoryComboBox" Width="130" SelectionChanged="FilterControl_SelectionChanged">
+                    <ComboBoxItem Content="Plugins" IsSelected="True"/>
+                    <ComboBoxItem Content="Mods"/>
+                </ComboBox>
+
+                <ComboBox x:Name="LoaderComboBox" Width="130" SelectionChanged="FilterControl_SelectionChanged">
+                    <ComboBoxItem Content="Todos" IsSelected="True"/>
+                    <ComboBoxItem Content="Paper"/>
+                    <ComboBoxItem Content="Purpur"/>
+                    <ComboBoxItem Content="Spigot"/>
+                    <ComboBoxItem Content="Fabric"/>
+                    <ComboBoxItem Content="Forge"/>
+                    <ComboBoxItem Content="NeoForge"/>
+                </ComboBox>
+
+                <ComboBox x:Name="VersionComboBox" Width="130" SelectionChanged="FilterControl_SelectionChanged">
+                    <ComboBoxItem Content="Todas" IsSelected="True"/>
+                    <ComboBoxItem Content="1.20.4"/>
+                    <ComboBoxItem Content="1.20.1"/>
+                    <ComboBoxItem Content="1.19.4"/>
+                    <ComboBoxItem Content="1.18.2"/>
+                    <ComboBoxItem Content="1.16.5"/>
+                </ComboBox>
+
+                <ComboBox x:Name="SortComboBox" Width="160" SelectionChanged="FilterControl_SelectionChanged">
+                    <ComboBoxItem Content="Más Descargados" IsSelected="True"/>
+                    <ComboBoxItem Content="Relevancia"/>
+                    <ComboBoxItem Content="Recientes"/>
+                </ComboBox>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Items ListView -->
+        <ListView x:Name="ItemsListView" Grid.Row="2" SelectionMode="Single" ItemClick="ItemsListView_ItemClick" IsItemClickEnabled="True">
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                        <Grid>
+                        <Grid ColumnSpacing="16">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="48"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" Spacing="6">
+                            <!-- Item Icon -->
+                            <Image Grid.Column="0" Source="{Binding IconUrl}" Width="48" Height="48" VerticalAlignment="Top" Stretch="UniformToFill"/>
+
+                            <!-- Item Info -->
+                            <StackPanel Grid.Column="1" Spacing="6">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
                                     <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold"/>
                                     <Border CornerRadius="4" Padding="6,2" Background="{ThemeResource AccentFillColorDefaultBrush}">
@@ -74,11 +110,28 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <Button Grid.Column="1" Content="Instalar .jar" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Center" Click="InstallButton_Click" Tag="{Binding}"/>
+                            <!-- Quick Action Buttons -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Content="Ver Detalles" Click="ViewDetailsButton_Click" Tag="{Binding}"/>
+                                <Button Content="Instalar .jar" Style="{StaticResource AccentButtonStyle}" Click="InstallButton_Click" Tag="{Binding}"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
+        <!-- Pagination Controls Bar -->
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="PrevPageButton" Grid.Column="0" Content="← Página Anterior" Click="PrevPageButton_Click"/>
+            <TextBlock x:Name="PageStatusTextBlock" Grid.Column="1" Text="Página 1 de 1" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <Button x:Name="NextPageButton" Grid.Column="2" Content="Página Siguiente →" Click="NextPageButton_Click"/>
+        </Grid>
     </Grid>
 </Page>
