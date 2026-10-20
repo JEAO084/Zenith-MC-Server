@@ -143,7 +143,7 @@ namespace Zenith_MC_Server
                 else if (choice.Contains("Mica"))
                 {
                     this.SystemBackdrop = new MicaBackdrop();
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(200, 15, 10, 20);
+                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(200, 15, 10, 20));
                 }
                 else
                 {
