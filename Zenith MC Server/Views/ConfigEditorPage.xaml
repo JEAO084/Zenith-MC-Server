@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
+    <!-- Agregar mas cosas aparte de las siguiente : 1 Controlar la ram y aunq ns si sea posible la CPU e Hilos, Argumentos -->
     <ScrollViewer Padding="24">
         <StackPanel MaxWidth="800" HorizontalAlignment="Left" Spacing="20">
             <!-- Header -->

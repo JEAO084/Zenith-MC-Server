@@ -33,7 +33,7 @@ namespace Zenith_MC_Server
             Current = this;
             InitializeComponent();
             ExtendsContentIntoTitleBar = true;
-            SetTitleBar(AppTitleBar);
+            SetTitleBar(TitleBar);
 
             RootGrid.PointerPressed += RootGrid_PointerPressed;
 
