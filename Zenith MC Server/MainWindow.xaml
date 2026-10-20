@@ -10,10 +10,44 @@
     Title="Zenith MC Server">
 
     <Window.SystemBackdrop>
-        <MicaBackdrop />
+        <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <!-- Custom Integrated TitleBar -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="40" Background="Transparent" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="8">
+                <Image Source="Assets/Square44x44Logo.scale-200.png" Width="20" Height="20" VerticalAlignment="Center"/>
+                <TextBlock Text="Zenith MC Server" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Navigation View -->
+        <NavigationView x:Name="NavView" Grid.Row="1" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Servidores" Tag="Dashboard" Icon="AllApps"/>
+                <NavigationViewItem Content="Crear Servidor" Tag="Wizard" Icon="Add"/>
+                <NavigationViewItem Content="Consola en Vivo" Tag="Console" Icon="Terminal"/>
+                <NavigationViewItem Content="Marketplace" Tag="Marketplace" Icon="Shop"/>
+                <NavigationViewItem Content="Explorador de Archivos" Tag="FileExplorer" Icon="Folder"/>
+                <NavigationViewItem Content="Editor de Configuración" Tag="ConfigEditor" Icon="Edit"/>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="Personalización" Tag="Appearance" Icon="Color"/>
+                <NavigationViewItem Content="Ajustes Generales" Tag="Settings" Icon="Setting"/>
+            </NavigationView.FooterMenuItems>
+
+            <Frame x:Name="ContentFrame"/>
+        </NavigationView>
     </Grid>
 </Window>

@@ -10,4 +10,6 @@
     <Platform Solution="*|x86" Project="x86" />
     <Deploy />
   </Project>
+  <Project Path="Zenith.Core/Zenith.Core.csproj" />
+  <Project Path="Zenith.Tests/Zenith.Tests.csproj" />
 </Solution>

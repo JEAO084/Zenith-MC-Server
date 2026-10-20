@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Zenith_MC_Server.Views.ConfigEditorPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Zenith_MC_Server.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24">
+        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Spacing="20">
+            <!-- Header -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="Editor Visual de Configuraciones" FontSize="24" FontWeight="Bold"/>
+                    <TextBlock Text="Edita server.properties y paper-global.yml de forma visual con mapeo interactivo de controles." Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                </StackPanel>
+
+                <Button Grid.Column="1" Content="Guardar Cambios" Style="{StaticResource AccentButtonStyle}" Click="SaveButton_Click" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- MOTD Visual Field with Color Preview -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Previsualización de MOTD (Mensaje del Día)" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBox x:Name="MotdInputBox" Header="Texto MOTD (Soporta códigos &a, &c, &l, §a)" TextChanged="MotdInputBox_TextChanged"/>
+                    <Border Background="#121212" CornerRadius="6" Padding="12" Margin="0,4,0,0">
+                        <RichTextBlock x:Name="MotdPreviewRichText" FontFamily="Consolas, Cascadia Code" FontSize="14" Foreground="White"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- General Settings Controls -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Ajustes de Juego y Servidor" FontSize="16" FontWeight="SemiBold"/>
+
+                    <Grid ColumnSpacing="20" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <NumberBox x:Name="MaxPlayersBox" Grid.Row="0" Grid.Column="0" Header="Máximo de Jugadores (max-players)" Minimum="1" Maximum="1000" SpinButtonPlacementMode="Inline"/>
+                        <NumberBox x:Name="ServerPortBox" Grid.Row="0" Grid.Column="1" Header="Puerto de Red (server-port)" Minimum="1024" Maximum="65535" SpinButtonPlacementMode="Inline"/>
+
+                        <ComboBox x:Name="DifficultyCombo" Grid.Row="1" Grid.Column="0" Header="Dificultad (difficulty)" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="peaceful"/>
+                            <ComboBoxItem Content="easy"/>
+                            <ComboBoxItem Content="normal"/>
+                            <ComboBoxItem Content="hard"/>
+                        </ComboBox>
+
+                        <ComboBox x:Name="GamemodeCombo" Grid.Row="1" Grid.Column="1" Header="Modo de Juego (gamemode)" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="survival"/>
+                            <ComboBoxItem Content="creative"/>
+                            <ComboBoxItem Content="adventure"/>
+                            <ComboBoxItem Content="spectator"/>
+                        </ComboBox>
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Spacing="8" Margin="0,8,0,0">
+                            <ToggleSwitch x:Name="PvpToggle" Header="Combate Jugador vs Jugador (PVP)"/>
+                            <ToggleSwitch x:Name="AllowFlightToggle" Header="Permitir Vuelo (allow-flight)"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="8" Margin="0,8,0,0">
+                            <ToggleSwitch x:Name="HardcoreToggle" Header="Modo Hardcore"/>
+                            <ToggleSwitch x:Name="OnlineModeToggle" Header="Modo Online (online-mode)"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
