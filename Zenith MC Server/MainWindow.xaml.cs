@@ -2,17 +2,16 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.DataTransfer;
 using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
+using Zenith_MC_Server.Views;
 
 namespace Zenith_MC_Server
 {
@@ -27,21 +26,8 @@ namespace Zenith_MC_Server
         private readonly PluginModManagerService _pluginModManager;
         private readonly MarketplaceService _marketplaceService;
 
-        private ServerPropertiesConfig _currentProperties;
-        private FileTreeNode? _selectedFileTreeNode;
-        private MarketplaceItem? _selectedMarketplaceItem;
-        private List<MinecraftVersionInfo> _wizardMojangVersions = new();
-
         private readonly Stack<string> _navigationHistory = new();
-        private int _pluginCurrentPage = 1;
-        private int _modCurrentPage = 1;
-
-        private readonly List<string> _knownMinecraftCommands = new()
-        {
-            "gamemode survival", "gamemode creative", "gamemode adventure", "gamemode spectator",
-            "gamerule doDaylightCycle false", "gamerule doMobSpawning false", "gamerule keepInventory true",
-            "op", "deop", "teleport", "tp", "give", "kick", "ban", "pardon", "stop", "reload", "save-all", "whitelist add", "whitelist remove", "list", "say"
-        };
+        private bool _isServerRunning = false;
 
         public MainWindow()
         {
@@ -53,26 +39,209 @@ namespace Zenith_MC_Server
             _processManager = new ServerProcessManager();
             _pluginModManager = new PluginModManagerService();
             _marketplaceService = new MarketplaceService();
-            _currentProperties = new ServerPropertiesConfig();
 
             this.InitializeComponent();
 
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(AppTitleBar);
 
+            ContentFrame.Navigated += ContentFrame_Navigated;
+
             _processManager.OutputReceived += OnServerOutputReceived;
             _processManager.ProcessExited += OnServerProcessExited;
 
             RefreshServerProfilesUI();
-            LoadActiveServerUI();
             UpdateStatusIndicator(false);
-            LoadJavaRuntimesUI();
-            LoadLauncherSettingsUI();
 
-            _ = LoadWizardVersionsAsync();
+            NavigateToTag("Dashboard");
         }
 
-        #region Mouse Button 4 & 5 Navigation
+        #region Service Accessors & Helper Methods
+
+        public ServerManagerService ServerManager => _serverManager;
+        public JavaInstallerService JavaService => _javaService;
+        public ServerDownloadService DownloadService => _downloadService;
+        public ServerConfigService ConfigService => _configService;
+        public FileManagerService FileManager => _fileManager;
+        public ServerProcessManager ProcessManager => _processManager;
+        public PluginModManagerService PluginModManager => _pluginModManager;
+        public MarketplaceService MarketplaceService => _marketplaceService;
+        public ServerProfile? ActiveProfile => _serverManager.ActiveProfile;
+
+        public void RefreshServerProfilesUI()
+        {
+            if (_serverManager == null || CmbServerSelector == null) return;
+            var profiles = _serverManager.GetProfiles();
+            CmbServerSelector.ItemsSource = profiles;
+            if (_serverManager.ActiveProfile != null)
+            {
+                CmbServerSelector.SelectedItem = _serverManager.ActiveProfile;
+            }
+        }
+
+        public void StartActiveServer()
+        {
+            var profile = ActiveProfile;
+            if (profile == null) return;
+
+            try
+            {
+                string serverDir = profile.DirectoryPath;
+                if (!Directory.Exists(serverDir))
+                {
+                    Directory.CreateDirectory(serverDir);
+                }
+
+                var jarFiles = Directory.GetFiles(serverDir, "*.jar");
+                if (jarFiles.Length == 0)
+                {
+                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo.");
+                    return;
+                }
+
+                string jarPath = Path.GetFileName(jarFiles[0]);
+                int ramGb = profile.AllocatedRamGb;
+
+                string javaPath = profile.JavaExecutablePath;
+                if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
+                {
+                    int reqJava = _downloadService?.GetRecommendedJavaVersion(profile.Version) ?? 21;
+                    var targetJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => v.MajorVersion == reqJava && File.Exists(v.InstalledPath))
+                                   ?? _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
+                    javaPath = targetJava != null ? targetJava.InstalledPath : "java";
+                }
+
+                AppendConsoleLog($"[Zenith] Iniciando servidor '{profile.Name}' ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
+                bool started = _processManager.StartServer(javaPath, serverDir, jarPath, ramGb, profile.CustomJvmArgs);
+                if (started)
+                {
+                    _isServerRunning = true;
+                    UpdateStatusIndicator(true);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendConsoleLog($"[Zenith Error] {ex.Message}");
+            }
+        }
+
+        public async void StopActiveServer()
+        {
+            AppendConsoleLog("[Zenith] Enviando comando 'stop' al servidor...");
+            await _processManager.StopServerAsync();
+            _isServerRunning = false;
+            UpdateStatusIndicator(false);
+        }
+
+        public void SendServerCommand(string command)
+        {
+            if (!string.IsNullOrWhiteSpace(command))
+            {
+                _processManager.SendCommand(command);
+            }
+        }
+
+        public void AppendConsoleLog(string message)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (ContentFrame.Content is DashboardPage dashPage)
+                {
+                    dashPage.AppendConsoleLog(message);
+                }
+            });
+        }
+
+        public void UpdateStatusIndicator(bool isRunning)
+        {
+            _isServerRunning = isRunning;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (StatusIndicatorDot != null) StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
+                if (StatusIndicatorText != null) StatusIndicatorText.Text = isRunning ? "Servidor En Ejecución" : "Servidor Detenido";
+
+                if (ContentFrame.Content is DashboardPage dashPage)
+                {
+                    dashPage.UpdateStatusIndicator(isRunning);
+                }
+            });
+        }
+
+        public void ApplyThemeMode(string choice)
+        {
+            if (choice.Contains("Claro"))
+            {
+                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Light;
+                this.SystemBackdrop = null;
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 243, 244, 246));
+                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 229, 231, 235));
+                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 17, 24, 39));
+                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 55, 65, 81));
+            }
+            else if (choice.Contains("Transparente"))
+            {
+                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
+                this.SystemBackdrop = new DesktopAcrylicBackdrop();
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(64, 17, 11, 24));
+                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(64, 26, 16, 36));
+                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
+                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+            }
+            else
+            {
+                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
+                this.SystemBackdrop = null;
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
+                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 26, 16, 36));
+                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
+                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+            }
+        }
+
+        #endregion
+
+        #region Navigation and Events
+
+        private void ContentFrame_Navigated(object sender, NavigationEventArgs e)
+        {
+            if (e.Content is DashboardPage dashPage)
+            {
+                dashPage.Initialize(this);
+                dashPage.UpdateStatusIndicator(_isServerRunning);
+                if (ActiveProfile != null)
+                {
+                    dashPage.UpdateActiveServerInfo(ActiveProfile.Name, $"{ActiveProfile.SoftwareType} {ActiveProfile.Version}", "25565");
+                }
+            }
+            else if (e.Content is WizardPage wizardPage)
+            {
+                wizardPage.Initialize(this);
+            }
+            else if (e.Content is ServerConfigPage configPage)
+            {
+                configPage.Initialize(this);
+            }
+            else if (e.Content is MarketplacePage marketPage)
+            {
+                marketPage.Initialize(this);
+            }
+            else if (e.Content is FileManagerPage filePage)
+            {
+                filePage.Initialize(this);
+            }
+            else if (e.Content is JavaPage javaPage)
+            {
+                javaPage.Initialize(this);
+            }
+            else if (e.Content is CustomizationPage customPage)
+            {
+                customPage.Initialize(this);
+            }
+            else if (e.Content is SettingsPage settingsPage)
+            {
+                settingsPage.Initialize(this);
+            }
+        }
 
         private void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
@@ -95,200 +264,55 @@ namespace Zenith_MC_Server
             {
                 _navigationHistory.Pop();
                 string previousTag = _navigationHistory.Peek();
-                SwitchToView(previousTag, recordHistory: false);
+                NavigateToTag(previousTag, recordHistory: false);
             }
         }
 
-        #endregion
-
-        #region Live Customization & Theme Controls (Oscuro, Claro, Transparente)
-
-        private void CmbAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            if (CmbAppTheme?.SelectedItem is ComboBoxItem item)
+            if (args.SelectedItemContainer is NavigationViewItem selectedItem)
             {
-                string choice = item.Content.ToString() ?? "";
-
-                if (choice.Contains("Claro"))
-                {
-                    // Standard WinUI Light Theme (No Acrylic Backdrop)
-                    if (Content is FrameworkElement rootElement)
-                    {
-                        rootElement.RequestedTheme = ElementTheme.Light;
-                    }
-                    this.SystemBackdrop = null;
-
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 243, 244, 246));
-                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 229, 231, 235));
-                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 17, 24, 39));
-                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 55, 65, 81));
-                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = false;
-                }
-                else if (choice.Contains("Transparente"))
-                {
-                    // Transparent Dark Theme with 25% Element Opacity (64/255 ~ 25%) + DesktopAcrylicBackdrop
-                    if (Content is FrameworkElement rootElement)
-                    {
-                        rootElement.RequestedTheme = ElementTheme.Dark;
-                    }
-                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
-
-                    // 25% opacity background brushes (Alpha = 64 out of 255)
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(64, 17, 11, 24));
-                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(64, 26, 16, 36));
-                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
-                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = true;
-                }
-                else
-                {
-                    // Standard WinUI Dark Theme (Dark Studio, Solid - No Acrylic Backdrop)
-                    if (Content is FrameworkElement rootElement)
-                    {
-                        rootElement.RequestedTheme = ElementTheme.Dark;
-                    }
-                    this.SystemBackdrop = null;
-
-                    if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
-                    if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 26, 16, 36));
-                    if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-                    if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
-                    if (CmbBackdropType != null) CmbBackdropType.IsEnabled = false;
-                }
+                string tag = selectedItem.Tag?.ToString() ?? "";
+                NavigateToTag(tag);
             }
         }
 
-        private void CmbAccentColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public void NavigateToTag(string tag, bool recordHistory = true)
         {
-            if (CmbAccentColor?.SelectedItem is ComboBoxItem item)
+            if (recordHistory && (_navigationHistory.Count == 0 || _navigationHistory.Peek() != tag))
             {
-                string choice = item.Content.ToString() ?? "";
-                Color accentColor = Color.FromArgb(255, 124, 58, 237); // Default Purple (#7C3AED)
-
-                if (choice.Contains("Azul")) accentColor = Color.FromArgb(255, 2, 132, 199);       // #0284C7
-                else if (choice.Contains("Verde")) accentColor = Color.FromArgb(255, 16, 185, 129);  // #10B981
-                else if (choice.Contains("Rojo")) accentColor = Color.FromArgb(255, 225, 29, 72);    // #E11D48
-                else if (choice.Contains("Naranja")) accentColor = Color.FromArgb(255, 245, 158, 11); // #F59E0B
-
-                var accentBrush = new SolidColorBrush(accentColor);
-
-                if (BtnSendCommand != null) BtnSendCommand.Background = accentBrush;
-                if (BtnSaveFileContent != null) BtnSaveFileContent.Background = accentBrush;
-                if (BtnDetailInstall != null) BtnDetailInstall.Background = accentBrush;
-                if (BrandLogoBorder != null) BrandLogoBorder.Background = accentBrush;
+                _navigationHistory.Push(tag);
             }
-        }
 
-        private void CmbBackdropType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbBackdropType?.SelectedItem is ComboBoxItem item)
+            switch (tag)
             {
-                string choice = item.Content.ToString() ?? "";
-                if (choice.Contains("DesktopAcrylic"))
-                {
-                    this.SystemBackdrop = new DesktopAcrylicBackdrop();
-                }
-                else if (choice.Contains("Mica"))
-                {
-                    this.SystemBackdrop = new MicaBackdrop();
-                }
-                else
-                {
-                    this.SystemBackdrop = null;
-                }
-            }
-        }
-
-        private void CmbConsoleBg_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbConsoleBg?.SelectedItem is ComboBoxItem item && ConsoleContainerBorder != null)
-            {
-                string choice = item.Content.ToString() ?? "";
-                Color bgCol = Color.FromArgb(255, 20, 12, 29);
-
-                if (choice.Contains("Negro")) bgCol = Color.FromArgb(255, 0, 0, 0);
-                else if (choice.Contains("Gris")) bgCol = Color.FromArgb(255, 26, 26, 26);
-                else if (choice.Contains("Azul")) bgCol = Color.FromArgb(255, 15, 23, 42);
-
-                ConsoleContainerBorder.Background = new SolidColorBrush(bgCol);
-            }
-        }
-
-        private void CmbConsoleColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbConsoleColor?.SelectedItem is ComboBoxItem item && TxtConsoleLog != null)
-            {
-                string choice = item.Content.ToString() ?? "";
-                Color textCol = Color.FromArgb(255, 56, 189, 248);
-
-                if (choice.Contains("Verde")) textCol = Color.FromArgb(255, 34, 197, 94);
-                else if (choice.Contains("Amarillo")) textCol = Color.FromArgb(255, 250, 204, 21);
-                else if (choice.Contains("Blanco")) textCol = Color.FromArgb(255, 255, 255, 255);
-
-                TxtConsoleLog.Foreground = new SolidColorBrush(textCol);
-            }
-        }
-
-        private void CmbConsoleFont_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbConsoleFont?.SelectedItem is ComboBoxItem item && TxtConsoleLog != null)
-            {
-                string fontFamily = item.Content.ToString() ?? "Consolas";
-                TxtConsoleLog.FontFamily = new FontFamily(fontFamily);
-            }
-        }
-
-        private void CmbEditorBg_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbEditorBg?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
-            {
-                string choice = item.Content.ToString() ?? "";
-                Color bgCol = Color.FromArgb(255, 30, 20, 40);
-
-                if (choice.Contains("Negro")) bgCol = Color.FromArgb(255, 18, 18, 18);
-                else if (choice.Contains("Azul")) bgCol = Color.FromArgb(255, 30, 30, 46);
-                else if (choice.Contains("Blanco")) bgCol = Color.FromArgb(255, 248, 250, 252);
-
-                TxtCodeEditor.Background = new SolidColorBrush(bgCol);
-            }
-        }
-
-        private void CmbEditorFg_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbEditorFg?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
-            {
-                string choice = item.Content.ToString() ?? "";
-                Color fgCol = Color.FromArgb(255, 226, 232, 240);
-
-                if (choice.Contains("Verde")) fgCol = Color.FromArgb(255, 74, 222, 128);
-                else if (choice.Contains("Azul")) fgCol = Color.FromArgb(255, 56, 189, 248);
-                else if (choice.Contains("Negro")) fgCol = Color.FromArgb(255, 15, 23, 42);
-
-                TxtCodeEditor.Foreground = new SolidColorBrush(fgCol);
-            }
-        }
-
-        private void CmbEditorFont_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbEditorFont?.SelectedItem is ComboBoxItem item && TxtCodeEditor != null)
-            {
-                string fontFamily = item.Content.ToString() ?? "Consolas";
-                TxtCodeEditor.FontFamily = new FontFamily(fontFamily);
-            }
-        }
-
-        #endregion
-
-        #region Multi-Server Manager & Wizard
-
-        private void RefreshServerProfilesUI()
-        {
-            if (_serverManager == null || CmbServerSelector == null) return;
-            var profiles = _serverManager.GetProfiles();
-            CmbServerSelector.ItemsSource = profiles;
-            if (_serverManager.ActiveProfile != null)
-            {
-                CmbServerSelector.SelectedItem = _serverManager.ActiveProfile;
+                case "Dashboard":
+                    ContentFrame.Navigate(typeof(DashboardPage));
+                    break;
+                case "Wizard":
+                    ContentFrame.Navigate(typeof(WizardPage));
+                    break;
+                case "Config":
+                    ContentFrame.Navigate(typeof(ServerConfigPage));
+                    break;
+                case "Marketplace":
+                    ContentFrame.Navigate(typeof(MarketplacePage));
+                    break;
+                case "FileManager":
+                    ContentFrame.Navigate(typeof(FileManagerPage));
+                    break;
+                case "JavaRuntimes":
+                    ContentFrame.Navigate(typeof(JavaPage));
+                    break;
+                case "Customization":
+                    ContentFrame.Navigate(typeof(CustomizationPage));
+                    break;
+                case "LauncherSettings":
+                    ContentFrame.Navigate(typeof(SettingsPage));
+                    break;
+                default:
+                    ContentFrame.Navigate(typeof(DashboardPage));
+                    break;
             }
         }
 
@@ -297,1098 +321,27 @@ namespace Zenith_MC_Server
             if (_serverManager != null && CmbServerSelector?.SelectedItem is ServerProfile profile)
             {
                 _serverManager.SelectProfile(profile.Id);
-                LoadActiveServerUI();
+                if (ContentFrame.Content is DashboardPage dashPage)
+                {
+                    dashPage.UpdateActiveServerInfo(profile.Name, $"{profile.SoftwareType} {profile.Version}", "25565");
+                }
             }
         }
 
         private void BtnOpenWizard_Click(object sender, RoutedEventArgs e)
         {
-            SwitchToView("Wizard");
-        }
-
-        private async Task LoadWizardVersionsAsync()
-        {
-            if (_downloadService == null || WzdChkSnapshots == null || WzdCmbVersion == null) return;
-            bool showSnapshots = WzdChkSnapshots.IsChecked == true;
-            _wizardMojangVersions = await _downloadService.GetMojangVersionsAsync(showSnapshots);
-
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                if (WzdCmbVersion != null)
-                {
-                    WzdCmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
-                    if (WzdCmbVersion.Items.Count > 0)
-                    {
-                        WzdCmbVersion.SelectedIndex = 0;
-                    }
-                }
-            });
-        }
-
-        private async void WzdChkSnapshots_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            await LoadWizardVersionsAsync();
-        }
-
-        private void WzdCmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_downloadService == null || WzdCmbVersion == null) return;
-            if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
-            {
-                var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
-                int reqJava = _downloadService.GetRecommendedJavaVersion(ver.Id);
-
-                if (WzdTxtJavaRequirement != null)
-                {
-                    WzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
-                }
-
-                var installedJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava && File.Exists(j.InstalledPath));
-                if (WzdTxtJavaStatus != null)
-                {
-                    if (installedJava != null)
-                    {
-                        WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} detectado e instalado localmente.";
-                    }
-                    else
-                    {
-                        WzdTxtJavaStatus.Text = $"Estado: Java {reqJava} no detectado. Se descargará e instalará automáticamente.";
-                    }
-                }
-
-                var loaders = _downloadService.GetCompatibleLoadersForVersion(ver.Id);
-                if (WzdCmbLoader != null)
-                {
-                    WzdCmbLoader.ItemsSource = loaders;
-                    if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
-                }
-            }
-        }
-
-        private async void BtnFinishWizard_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _downloadService == null || BtnFinishWizard == null || WzdProgressBar == null) return;
-
-            BtnFinishWizard.IsEnabled = false;
-            BtnFinishWizard.Content = "⏳ Creando Servidor e Instalando Archivos...";
-            WzdProgressBar.Visibility = Visibility.Visible;
-
-            try
-            {
-                string name = WzdServerName?.Text.Trim() ?? "Nuevo Servidor";
-                if (string.IsNullOrWhiteSpace(name)) name = "Nuevo Servidor";
-
-                string icon = "⛏️";
-                if (WzdServerIcon?.SelectedItem is ComboBoxItem iconItem)
-                {
-                    icon = iconItem.Content.ToString()?.Split(' ')[0] ?? "⛏️";
-                }
-
-                string version = "1.20.4";
-                if (WzdCmbVersion != null && WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
-                {
-                    version = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
-                }
-
-                string loader = "Paper";
-                if (WzdCmbLoader?.SelectedItem != null)
-                {
-                    loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
-                }
-
-                int ramGb = 4;
-                if (WzdCmbRam?.SelectedItem is ComboBoxItem ramItem)
-                {
-                    int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
-                }
-
-                int port = 25565;
-                if (WzdTxtPort != null)
-                {
-                    int.TryParse(WzdTxtPort.Text.Trim(), out port);
-                }
-
-                string displayName = $"{icon} {name}";
-                var newProfile = _serverManager.CreateProfile(displayName, loader, version, ramGb);
-
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Obteniendo {loader} {version} (server.jar)...";
-                try
-                {
-                    string downloadedJarPath = await _downloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
-                    {
-                        DispatcherQueue.TryEnqueue(() => { if (WzdProgressBar != null) WzdProgressBar.Value = p; });
-                    });
-
-                    newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
-                }
-                catch (Exception jarEx)
-                {
-                    AppendConsoleLog($"[Zenith Warning] No se pudo obtener server.jar automático: {jarEx.Message}");
-                }
-
-                if (WzdToggleAikarsFlags != null && WzdToggleAikarsFlags.IsOn && _configService != null)
-                {
-                    newProfile.CustomJvmArgs = _configService.GetAikarsJvmFlags(ramGb);
-                }
-
-                int reqJava = _downloadService.GetRecommendedJavaVersion(version);
-                var javaVerOption = _javaService?.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava);
-                if (javaVerOption != null)
-                {
-                    if (File.Exists(javaVerOption.InstalledPath))
-                    {
-                        newProfile.JavaExecutablePath = javaVerOption.InstalledPath;
-                    }
-                    else
-                    {
-                        if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Instalando JDK Java {reqJava}...";
-                        try
-                        {
-                            string downloadedJavaPath = await _javaService!.DownloadAndExtractJavaAsync(javaVerOption);
-                            newProfile.JavaExecutablePath = downloadedJavaPath;
-                        }
-                        catch { }
-                    }
-                }
-
-                if (_configService != null)
-                {
-                    bool eulaAccepted = WzdToggleEula?.IsOn ?? true;
-                    _configService.SetEulaAccepted(newProfile.DirectoryPath, eulaAccepted);
-                    var props = _configService.LoadProperties(newProfile.DirectoryPath);
-                    props.SetProperty("server-port", port.ToString());
-                    props.SetProperty("motd", $"{name} - Servidor Minecraft");
-                    _configService.SaveProperties(newProfile.DirectoryPath, props);
-                }
-
-                _serverManager.UpdateProfile(newProfile);
-                _serverManager.SelectProfile(newProfile.Id);
-
-                RefreshServerProfilesUI();
-                LoadActiveServerUI();
-
-                AppendConsoleLog($"[Zenith Wizard] ¡Servidor '{newProfile.Name}' creado exitosamente con Java {reqJava}!");
-                SwitchToView("Dashboard");
-            }
-            catch (Exception ex)
-            {
-                AppendConsoleLog($"[Zenith Wizard Notice] {ex.Message}");
-            }
-            finally
-            {
-                BtnFinishWizard.IsEnabled = true;
-                BtnFinishWizard.Content = "🚀 Finalizar y Crear Servidor";
-                WzdProgressBar.Visibility = Visibility.Collapsed;
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = string.Empty;
-            }
-        }
-
-        private void BtnCreateServerProfile_Click(object sender, RoutedEventArgs e)
-        {
-            SwitchToView("Wizard");
-        }
-
-        private async void LoadActiveServerUI()
-        {
-            if (_serverManager == null || _configService == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            if (TxtActiveServerName != null) TxtActiveServerName.Text = $"Servidor: {profile.Name}";
-            if (TxtActiveSoftware != null) TxtActiveSoftware.Text = $"Motor: {profile.SoftwareType} {profile.Version}";
-
-            string serverDir = profile.DirectoryPath;
-            if (!Directory.Exists(serverDir))
-            {
-                Directory.CreateDirectory(serverDir);
-            }
-
-            _currentProperties = _configService.LoadProperties(serverDir);
-            if (TxtActivePort != null) TxtActivePort.Text = $"Puerto: {_currentProperties.GetProperty("server-port", "25565")}";
-
-            bool isPluginLoader = IsPluginMode();
-            if (NavItemDownloadPlugins != null) NavItemDownloadPlugins.IsEnabled = isPluginLoader;
-            if (NavItemInstalledPlugins != null) NavItemInstalledPlugins.IsEnabled = isPluginLoader;
-
-            if (NavItemDownloadMods != null) NavItemDownloadMods.IsEnabled = !isPluginLoader;
-            if (NavItemInstalledMods != null) NavItemInstalledMods.IsEnabled = !isPluginLoader;
-
-            LoadConfigurationToUI();
-            RefreshFileList();
-            LoadEngineConfigs();
-            RefreshInstalledPluginsList();
-            RefreshInstalledModsList();
-            await RefreshMarketplacePluginCatalogAsync();
-            await RefreshMarketplaceModCatalogAsync();
-        }
-
-        #endregion
-
-        #region Navigation View Switching
-
-        private void SwitchToView(string tag, bool recordHistory = true)
-        {
-            if (recordHistory && (_navigationHistory.Count == 0 || _navigationHistory.Peek() != tag))
-            {
-                _navigationHistory.Push(tag);
-            }
-
-            if (ViewDashboard != null) ViewDashboard.Visibility = tag == "Dashboard" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewWizard != null) ViewWizard.Visibility = tag == "Wizard" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewConfig != null) ViewConfig.Visibility = tag == "Config" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewDownloadPlugins != null) ViewDownloadPlugins.Visibility = tag == "DownloadPlugins" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewDownloadMods != null) ViewDownloadMods.Visibility = tag == "DownloadMods" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewInstalledPlugins != null) ViewInstalledPlugins.Visibility = tag == "InstalledPlugins" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewInstalledMods != null) ViewInstalledMods.Visibility = tag == "InstalledMods" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewMarketplaceDetails != null) ViewMarketplaceDetails.Visibility = tag == "MarketplaceDetails" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewFileManager != null) ViewFileManager.Visibility = tag == "FileManager" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewJavaRuntimes != null) ViewJavaRuntimes.Visibility = tag == "JavaRuntimes" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewCustomization != null) ViewCustomization.Visibility = tag == "Customization" ? Visibility.Visible : Visibility.Collapsed;
-            if (ViewLauncherSettings != null) ViewLauncherSettings.Visibility = tag == "LauncherSettings" ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private async void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
-        {
-            if (args.SelectedItemContainer is NavigationViewItem selectedItem)
-            {
-                string tag = selectedItem.Tag?.ToString() ?? "";
-                SwitchToView(tag);
-
-                if (tag == "Config")
-                {
-                    LoadConfigurationToUI();
-                    LoadEngineConfigs();
-                }
-                else if (tag == "DownloadPlugins")
-                {
-                    await RefreshMarketplacePluginCatalogAsync();
-                }
-                else if (tag == "DownloadMods")
-                {
-                    await RefreshMarketplaceModCatalogAsync();
-                }
-                else if (tag == "InstalledPlugins")
-                {
-                    RefreshInstalledPluginsList();
-                }
-                else if (tag == "InstalledMods")
-                {
-                    RefreshInstalledModsList();
-                }
-                else if (tag == "FileManager")
-                {
-                    RefreshFileList();
-                }
-                else if (tag == "JavaRuntimes")
-                {
-                    LoadJavaRuntimesUI();
-                }
-                else if (tag == "LauncherSettings")
-                {
-                    LoadLauncherSettingsUI();
-                }
-            }
-        }
-
-        #endregion
-
-        #region Dashboard & Process Controls
-
-        private void UpdateStatusIndicator(bool isRunning)
-        {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                if (StatusIndicatorDot != null) StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
-                if (StatusIndicatorText != null) StatusIndicatorText.Text = isRunning ? "Servidor En Ejecución" : "Servidor Detenido";
-                if (BtnStartServer != null) BtnStartServer.IsEnabled = !isRunning;
-                if (BtnStopServer != null) BtnStopServer.IsEnabled = isRunning;
-            });
-        }
-
-        private void BtnStartServer_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _configService == null || _processManager == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            try
-            {
-                string serverDir = profile.DirectoryPath;
-                if (!Directory.Exists(serverDir))
-                {
-                    Directory.CreateDirectory(serverDir);
-                }
-
-                var jarFiles = Directory.GetFiles(serverDir, "*.jar");
-                if (jarFiles.Length == 0)
-                {
-                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo. Usa el 'Asistente de Creación' para descargar e instalar el servidor.");
-                    return;
-                }
-
-                string jarPath = Path.GetFileName(jarFiles[0]);
-                if (TxtActiveSoftware != null) TxtActiveSoftware.Text = $"Motor: {jarPath}";
-
-                if (!_configService.CheckEulaAccepted(serverDir))
-                {
-                    AppendConsoleLog("[Zenith] ADVERTENCIA: El archivo eula.txt no ha sido aceptado. Ve a 'Configuración del Servidor' para activar eula=true.");
-                }
-
-                int ramGb = profile.AllocatedRamGb;
-
-                string javaPath = profile.JavaExecutablePath;
-                if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
-                {
-                    int reqJava = _downloadService?.GetRecommendedJavaVersion(profile.Version) ?? 21;
-                    var targetJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => v.MajorVersion == reqJava && File.Exists(v.InstalledPath))
-                                   ?? _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
-                    javaPath = targetJava != null ? targetJava.InstalledPath : "java";
-                }
-
-                AppendConsoleLog($"[Zenith] Iniciando servidor '{profile.Name}' ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
-                bool started = _processManager.StartServer(javaPath, serverDir, jarPath, ramGb, profile.CustomJvmArgs);
-                if (started)
-                {
-                    UpdateStatusIndicator(true);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendConsoleLog($"[Zenith] Error al iniciar el servidor: {ex.Message}");
-            }
-        }
-
-        private async void BtnStopServer_Click(object sender, RoutedEventArgs e)
-        {
-            if (_processManager == null) return;
-            AppendConsoleLog("[Zenith] Enviando comando 'stop' al servidor...");
-            await _processManager.StopServerAsync();
-            UpdateStatusIndicator(false);
-        }
-
-        private void CmbRamAllocation_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_serverManager != null && _serverManager.ActiveProfile != null && CmbRamAllocation?.SelectedItem is ComboBoxItem item)
-            {
-                if (int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int parsedRam))
-                {
-                    _serverManager.ActiveProfile.AllocatedRamGb = parsedRam;
-                    _serverManager.UpdateProfile(_serverManager.ActiveProfile);
-                }
-            }
-        }
-
-        private void BtnSendCommand_Click(object sender, RoutedEventArgs e)
-        {
-            SendConsoleInput();
-        }
-
-        private void TxtConsoleInput_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (TxtConsoleInput == null || CmdSuggestionContainer == null) return;
-            string query = TxtConsoleInput.Text.Trim().ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            var matches = _knownMinecraftCommands.Where(c => c.StartsWith(query, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (matches.Count > 0)
-            {
-                if (LstCmdSuggestions != null) LstCmdSuggestions.ItemsSource = matches;
-                CmdSuggestionContainer.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void LstCmdSuggestions_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (LstCmdSuggestions?.SelectedItem is string selectedCmd)
-            {
-                if (TxtConsoleInput != null) TxtConsoleInput.Text = selectedCmd;
-                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void TxtConsoleInput_KeyDown(object sender, KeyRoutedEventArgs e)
-        {
-            if (e.Key == Windows.System.VirtualKey.Enter)
-            {
-                SendConsoleInput();
-            }
-            else if (e.Key == Windows.System.VirtualKey.Tab && LstCmdSuggestions != null && LstCmdSuggestions.Items.Count > 0)
-            {
-                if (TxtConsoleInput != null) TxtConsoleInput.Text = LstCmdSuggestions.Items[0].ToString() ?? "";
-                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-                e.Handled = true;
-            }
-        }
-
-        private void SendConsoleInput()
-        {
-            if (TxtConsoleInput == null) return;
-            string cmd = TxtConsoleInput.Text.Trim();
-            if (!string.IsNullOrEmpty(cmd) && _processManager != null)
-            {
-                _processManager.SendCommand(cmd);
-                TxtConsoleInput.Text = string.Empty;
-                if (CmdSuggestionContainer != null) CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-            }
+            NavigateToTag("Wizard");
         }
 
         private void OnServerOutputReceived(string line)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                AppendConsoleLog(line);
-            });
+            AppendConsoleLog(line);
         }
 
         private void OnServerProcessExited(int exitCode)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                AppendConsoleLog($"[Zenith] El servidor se ha detenido con código de salida: {exitCode}");
-                UpdateStatusIndicator(false);
-
-                if (ToggleAutoRestart != null && ToggleAutoRestart.IsOn && exitCode != 0)
-                {
-                    AppendConsoleLog("[Zenith Auto-Restart] Reiniciando servidor automáticamente en 3 segundos...");
-                    Task.Delay(3000).ContinueWith(_ => DispatcherQueue.TryEnqueue(() => BtnStartServer_Click(this, new RoutedEventArgs())));
-                }
-            });
-        }
-
-        private void AppendConsoleLog(string message)
-        {
-            if (TxtConsoleLog != null && ConsoleScrollViewer != null)
-            {
-                TxtConsoleLog.Text += $"{message}\n";
-                ConsoleScrollViewer.ChangeView(null, ConsoleScrollViewer.ScrollableHeight, null);
-            }
-        }
-
-        #endregion
-
-        #region Visual Configuration & Extended Settings
-
-        private void LoadConfigurationToUI()
-        {
-            if (_serverManager == null || _configService == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            _currentProperties = _configService.LoadProperties(profile.DirectoryPath);
-
-            if (CfgMotd != null) CfgMotd.Text = _currentProperties.GetProperty("motd", "A Minecraft Server");
-            if (CfgMaxPlayers != null) CfgMaxPlayers.Text = _currentProperties.GetProperty("max-players", "20");
-            if (CfgServerPort != null) CfgServerPort.Text = _currentProperties.GetProperty("server-port", "25565");
-
-            if (CfgViewDistance != null) CfgViewDistance.Text = _currentProperties.GetProperty("view-distance", "10");
-            if (CfgSimulationDistance != null) CfgSimulationDistance.Text = _currentProperties.GetProperty("simulation-distance", "10");
-            if (CfgLevelSeed != null) CfgLevelSeed.Text = _currentProperties.GetProperty("level-seed", "");
-            if (CfgSpawnProtection != null) CfgSpawnProtection.Text = _currentProperties.GetProperty("spawn-protection", "16");
-
-            if (CfgGamemode != null) SelectComboByContent(CfgGamemode, _currentProperties.GetProperty("gamemode", "survival"));
-            if (CfgDifficulty != null) SelectComboByContent(CfgDifficulty, _currentProperties.GetProperty("difficulty", "easy"));
-
-            if (CfgOnlineMode != null) CfgOnlineMode.IsOn = _currentProperties.GetProperty("online-mode", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            if (CfgPvp != null) CfgPvp.IsOn = _currentProperties.GetProperty("pvp", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            if (CfgAllowFlight != null) CfgAllowFlight.IsOn = _currentProperties.GetProperty("allow-flight", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
-            if (CfgCommandBlocks != null) CfgCommandBlocks.IsOn = _currentProperties.GetProperty("enable-command-block", "true").Equals("true", StringComparison.OrdinalIgnoreCase);
-            if (CfgHardcore != null) CfgHardcore.IsOn = _currentProperties.GetProperty("hardcore", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
-
-            if (ToggleEula != null) ToggleEula.IsOn = _configService.CheckEulaAccepted(profile.DirectoryPath);
-
-            if (TxtServerCustomJavaExe != null) TxtServerCustomJavaExe.Text = profile.JavaExecutablePath;
-            if (TxtCustomJvmArgs != null) TxtCustomJvmArgs.Text = profile.CustomJvmArgs;
-        }
-
-        private void LoadEngineConfigs()
-        {
-            if (_serverManager == null || _configService == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            var paperCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "paper-global.yml", "# Paper Global Configuration\nverbose: false\nconfig-version: 28\n");
-            if (TxtPaperConfigEditor != null) TxtPaperConfigEditor.Text = paperCfg.Content;
-
-            var spigotCfg = _configService.LoadSpecificConfig(profile.DirectoryPath, "spigot.yml", "# Spigot Configuration File\nconfig-version: 12\nsettings:\n  bungeecord: false\n");
-            if (TxtSpigotConfigEditor != null) TxtSpigotConfigEditor.Text = spigotCfg.Content;
-        }
-
-        private void SelectComboByContent(ComboBox combo, string val)
-        {
-            if (combo == null) return;
-            for (int i = 0; i < combo.Items.Count; i++)
-            {
-                if (combo.Items[i] is ComboBoxItem item && item.Content.ToString()?.Equals(val, StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    combo.SelectedIndex = i;
-                    return;
-                }
-            }
-        }
-
-        private void BtnApplyAikarsFlags_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager?.ActiveProfile != null && _configService != null && TxtCustomJvmArgs != null)
-            {
-                int ram = _serverManager.ActiveProfile.AllocatedRamGb;
-                TxtCustomJvmArgs.Text = _configService.GetAikarsJvmFlags(ram);
-            }
-        }
-
-        private void BtnSaveConfig_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _configService == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            if (CfgMotd != null) _currentProperties.SetProperty("motd", CfgMotd.Text);
-            if (CfgMaxPlayers != null) _currentProperties.SetProperty("max-players", CfgMaxPlayers.Text);
-            if (CfgServerPort != null) _currentProperties.SetProperty("server-port", CfgServerPort.Text);
-
-            if (CfgViewDistance != null) _currentProperties.SetProperty("view-distance", CfgViewDistance.Text);
-            if (CfgSimulationDistance != null) _currentProperties.SetProperty("simulation-distance", CfgSimulationDistance.Text);
-            if (CfgLevelSeed != null) _currentProperties.SetProperty("level-seed", CfgLevelSeed.Text);
-            if (CfgSpawnProtection != null) _currentProperties.SetProperty("spawn-protection", CfgSpawnProtection.Text);
-
-            if (CfgGamemode?.SelectedItem is ComboBoxItem gmItem)
-            {
-                _currentProperties.SetProperty("gamemode", gmItem.Content.ToString() ?? "survival");
-            }
-
-            if (CfgDifficulty?.SelectedItem is ComboBoxItem diffItem)
-            {
-                _currentProperties.SetProperty("difficulty", diffItem.Content.ToString() ?? "easy");
-            }
-
-            if (CfgOnlineMode != null) _currentProperties.SetProperty("online-mode", CfgOnlineMode.IsOn.ToString().ToLower());
-            if (CfgPvp != null) _currentProperties.SetProperty("pvp", CfgPvp.IsOn.ToString().ToLower());
-            if (CfgAllowFlight != null) _currentProperties.SetProperty("allow-flight", CfgAllowFlight.IsOn.ToString().ToLower());
-            if (CfgCommandBlocks != null) _currentProperties.SetProperty("enable-command-block", CfgCommandBlocks.IsOn.ToString().ToLower());
-            if (CfgHardcore != null) _currentProperties.SetProperty("hardcore", CfgHardcore.IsOn.ToString().ToLower());
-
-            if (TxtServerCustomJavaExe != null) profile.JavaExecutablePath = TxtServerCustomJavaExe.Text.Trim();
-            if (TxtCustomJvmArgs != null) profile.CustomJvmArgs = TxtCustomJvmArgs.Text.Trim();
-            _serverManager.UpdateProfile(profile);
-
-            _configService.SaveProperties(profile.DirectoryPath, _currentProperties);
-            if (ToggleEula != null) _configService.SetEulaAccepted(profile.DirectoryPath, ToggleEula.IsOn);
-
-            if (TxtActivePort != null && CfgServerPort != null) TxtActivePort.Text = $"Puerto: {CfgServerPort.Text}";
-            AppendConsoleLog("[Zenith] Configuración guardada en server.properties y eula.txt");
-        }
-
-        private void BtnSavePaperConfig_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _configService == null || TxtPaperConfigEditor == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            _configService.SaveSpecificConfig(profile.DirectoryPath, "paper-global.yml", TxtPaperConfigEditor.Text);
-            AppendConsoleLog("[Zenith] Guardado paper-global.yml exitosamente.");
-        }
-
-        private void BtnSaveSpigotConfig_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _configService == null || TxtSpigotConfigEditor == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            _configService.SaveSpecificConfig(profile.DirectoryPath, "spigot.yml", TxtSpigotConfigEditor.Text);
-            AppendConsoleLog("[Zenith] Guardado spigot.yml exitosamente.");
-        }
-
-        private void BtnReloadConfig_Click(object sender, RoutedEventArgs e)
-        {
-            LoadConfigurationToUI();
-            LoadEngineConfigs();
-        }
-
-        private void ToggleEula_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager != null && _serverManager.ActiveProfile != null && _configService != null && ToggleEula != null)
-            {
-                _configService.SetEulaAccepted(_serverManager.ActiveProfile.DirectoryPath, ToggleEula.IsOn);
-            }
-        }
-
-        #endregion
-
-        #region Marketplace & Pagination & Installed Plugins / Mods
-
-        private async Task RefreshMarketplacePluginCatalogAsync()
-        {
-            if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadPlugins == null) return;
-            string ver = (CmbPluginVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
-            if (ver == "Todas las Versiones") ver = _serverManager.ActiveProfile.Version;
-
-            string category = (CmbPluginCategoryFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Categorías";
-            string loader = _serverManager.ActiveProfile.SoftwareType;
-            string source = (CmbPluginSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
-            string search = TxtPluginSearch?.Text ?? "";
-            string sort = (CmbPluginSort != null && CmbPluginSort.SelectedIndex == 1) ? "Name" : "Downloads";
-
-            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Plugin, ver, loader, source, search, sort, category, overrideVersionFilter: "Todas", page: _pluginCurrentPage, pageSize: 20);
-            GrdDownloadPlugins.ItemsSource = items;
-
-            if (TxtPluginPageNumber != null) TxtPluginPageNumber.Text = $"Página {_pluginCurrentPage}";
-            if (BtnPrevPluginPage != null) BtnPrevPluginPage.IsEnabled = _pluginCurrentPage > 1;
-        }
-
-        private async Task RefreshMarketplaceModCatalogAsync()
-        {
-            if (_marketplaceService == null || _serverManager?.ActiveProfile == null || GrdDownloadMods == null) return;
-            string ver = (CmbModVersionFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Versiones";
-            if (ver == "Todas las Versiones") ver = _serverManager.ActiveProfile.Version;
-
-            string category = (CmbModCategoryFilter?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Categorías";
-            string loader = _serverManager.ActiveProfile.SoftwareType;
-            string source = (CmbModSource?.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Todas las Fuentes";
-            string search = TxtModSearch?.Text ?? "";
-            string sort = (CmbModSort != null && CmbModSort.SelectedIndex == 1) ? "Name" : "Downloads";
-
-            var items = await _marketplaceService.GetFeaturedItemsAsync(MarketplaceCategory.Mod, ver, loader, source, search, sort, category, overrideVersionFilter: "Todas", page: _modCurrentPage, pageSize: 20);
-            GrdDownloadMods.ItemsSource = items;
-
-            if (TxtModPageNumber != null) TxtModPageNumber.Text = $"Página {_modCurrentPage}";
-            if (BtnPrevModPage != null) BtnPrevModPage.IsEnabled = _modCurrentPage > 1;
-        }
-
-        private async void BtnPrevPluginPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_pluginCurrentPage > 1)
-            {
-                _pluginCurrentPage--;
-                await RefreshMarketplacePluginCatalogAsync();
-            }
-        }
-
-        private async void BtnNextPluginPage_Click(object sender, RoutedEventArgs e)
-        {
-            _pluginCurrentPage++;
-            await RefreshMarketplacePluginCatalogAsync();
-        }
-
-        private async void BtnPrevModPage_Click(object sender, RoutedEventArgs e)
-        {
-            if (_modCurrentPage > 1)
-            {
-                _modCurrentPage--;
-                await RefreshMarketplaceModCatalogAsync();
-            }
-        }
-
-        private async void BtnNextModPage_Click(object sender, RoutedEventArgs e)
-        {
-            _modCurrentPage++;
-            await RefreshMarketplaceModCatalogAsync();
-        }
-
-        private async void CmbPluginSource_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
-        private async void CmbPluginVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
-        private async void CmbPluginCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
-        private async void TxtPluginSearch_TextChanged(object sender, TextChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
-        private async void CmbPluginSort_SelectionChanged(object sender, SelectionChangedEventArgs e) { _pluginCurrentPage = 1; await RefreshMarketplacePluginCatalogAsync(); }
-
-        private async void CmbModSource_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
-        private async void CmbModVersionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
-        private async void CmbModCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
-        private async void TxtModSearch_TextChanged(object sender, TextChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
-        private async void CmbModSort_SelectionChanged(object sender, SelectionChangedEventArgs e) { _modCurrentPage = 1; await RefreshMarketplaceModCatalogAsync(); }
-
-        private void GrdDownloadPlugins_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (e.ClickedItem is MarketplaceItem item)
-            {
-                OpenMarketplaceItemDetails(item);
-            }
-        }
-
-        private void GrdDownloadMods_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (e.ClickedItem is MarketplaceItem item)
-            {
-                OpenMarketplaceItemDetails(item);
-            }
-        }
-
-        private void OpenMarketplaceItemDetails(MarketplaceItem item)
-        {
-            _selectedMarketplaceItem = item;
-            if (TxtDetailTitle != null) TxtDetailTitle.Text = item.Title;
-            if (TxtDetailAuthor != null) TxtDetailAuthor.Text = $"Autor: {item.Author}";
-            if (TxtDetailSource != null) TxtDetailSource.Text = $"Fuente: {item.SourceName}";
-            if (TxtDetailDownloads != null) TxtDetailDownloads.Text = $"Descargas: {item.FormattedDownloads}";
-            if (TxtDetailSummary != null) TxtDetailSummary.Text = item.Summary;
-            if (TxtDetailDescription != null) TxtDetailDescription.Text = item.Description;
-
-            if (ImgDetailIcon != null && !string.IsNullOrEmpty(item.IconUrl))
-            {
-                try { ImgDetailIcon.Source = new BitmapImage(new Uri(item.IconUrl)); } catch { }
-            }
-
-            SwitchToView("MarketplaceDetails");
-        }
-
-        private void BtnBackToMarketplace_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedMarketplaceItem != null && _selectedMarketplaceItem.Category == MarketplaceCategory.Mod)
-            {
-                SwitchToView("DownloadMods");
-            }
-            else
-            {
-                SwitchToView("DownloadPlugins");
-            }
-        }
-
-        private async void BtnDetailInstall_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedMarketplaceItem != null && _serverManager?.ActiveProfile != null && _marketplaceService != null && BtnDetailInstall != null)
-            {
-                BtnDetailInstall.IsEnabled = false;
-                BtnDetailInstall.Content = "⏳ Instalando...";
-                try
-                {
-                    string path = await _marketplaceService.DownloadAndInstallItemAsync(_selectedMarketplaceItem, _serverManager.ActiveProfile.DirectoryPath);
-                    AppendConsoleLog($"[Zenith Marketplace] Instalado '{_selectedMarketplaceItem.Title}' en {path}");
-                    BtnDetailInstall.Content = "¡Instalación Exitosa!";
-                }
-                catch (Exception ex)
-                {
-                    AppendConsoleLog($"[Zenith Marketplace Error] {ex.Message}");
-                    BtnDetailInstall.Content = "Error al instalar";
-                }
-                finally
-                {
-                    await Task.Delay(1500);
-                    BtnDetailInstall.IsEnabled = true;
-                    BtnDetailInstall.Content = "🚀 Instalar en Servidor";
-                }
-            }
-        }
-
-        private async void BtnInstallMarketplaceItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is MarketplaceItem item && _serverManager?.ActiveProfile != null && _marketplaceService != null)
-            {
-                btn.IsEnabled = false;
-                btn.Content = "⏳";
-                try
-                {
-                    await _marketplaceService.DownloadAndInstallItemAsync(item, _serverManager.ActiveProfile.DirectoryPath);
-                    btn.Content = "✓";
-                    AppendConsoleLog($"[Zenith Marketplace] Instalado '{item.Title}' ({item.JarFileName}).");
-                }
-                catch (Exception ex)
-                {
-                    btn.Content = "Error";
-                    AppendConsoleLog($"[Zenith Marketplace Error] {ex.Message}");
-                }
-            }
-        }
-
-        private void RefreshInstalledPluginsList()
-        {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null || LstInstalledPlugins == null) return;
-            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, true);
-            LstInstalledPlugins.ItemsSource = items;
-        }
-
-        private void RefreshInstalledModsList()
-        {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null || LstInstalledMods == null) return;
-            var items = _pluginModManager.GetItems(_serverManager.ActiveProfile.DirectoryPath, false);
-            LstInstalledMods.ItemsSource = items;
-        }
-
-        private void BtnRefreshInstalledPlugins_Click(object sender, RoutedEventArgs e) => RefreshInstalledPluginsList();
-        private void BtnRefreshInstalledMods_Click(object sender, RoutedEventArgs e) => RefreshInstalledModsList();
-
-        private async void BtnUpdateInstalledItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is PluginModItem item && _serverManager?.ActiveProfile != null && _marketplaceService != null)
-            {
-                btn.IsEnabled = false;
-                btn.Content = "⏳ Buscando actualización...";
-                try
-                {
-                    bool isPlugin = IsPluginMode();
-                    string cleanName = item.FileName.Replace(".jar.disabled", "").Replace(".jar", "").Split('-')[0];
-                    var searchResults = await _marketplaceService.GetFeaturedItemsAsync(
-                        isPlugin ? MarketplaceCategory.Plugin : MarketplaceCategory.Mod,
-                        searchQuery: cleanName);
-
-                    if (searchResults.Count > 0)
-                    {
-                        var match = searchResults[0];
-                        await _marketplaceService.DownloadAndInstallItemAsync(match, _serverManager.ActiveProfile.DirectoryPath);
-                        btn.Content = "✓ ¡Actualizado!";
-                        AppendConsoleLog($"[Zenith 1-Click Update] '{item.FileName}' actualizado exitosamente con la última versión de {match.SourceName}.");
-                    }
-                    else
-                    {
-                        btn.Content = "Ya actualizado";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    btn.Content = "Error";
-                    AppendConsoleLog($"[Zenith Update Notice] {ex.Message}");
-                }
-                finally
-                {
-                    await Task.Delay(1500);
-                    btn.IsEnabled = true;
-                    btn.Content = "⚡ Actualizar (1-Click)";
-                    RefreshInstalledPluginsList();
-                    RefreshInstalledModsList();
-                }
-            }
-        }
-
-        private void ChkTogglePlugin_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox chk && chk.Tag is PluginModItem item && _pluginModManager != null)
-            {
-                _pluginModManager.ToggleItem(item.FullPath);
-                RefreshInstalledPluginsList();
-            }
-        }
-
-        private void BtnDeletePluginItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is PluginModItem item && _pluginModManager != null)
-            {
-                _pluginModManager.DeleteItem(item.FullPath);
-                RefreshInstalledPluginsList();
-            }
-        }
-
-        private void ChkToggleMod_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox chk && chk.Tag is PluginModItem item && _pluginModManager != null)
-            {
-                _pluginModManager.ToggleItem(item.FullPath);
-                RefreshInstalledModsList();
-            }
-        }
-
-        private void BtnDeleteModItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is PluginModItem item && _pluginModManager != null)
-            {
-                _pluginModManager.DeleteItem(item.FullPath);
-                RefreshInstalledModsList();
-            }
-        }
-
-        private void DropZoneBorder_DragOver(object sender, DragEventArgs e)
-        {
-            e.AcceptedOperation = DataPackageOperation.Copy;
-        }
-
-        private async void DropZonePlugins_Drop(object sender, DragEventArgs e)
-        {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
-
-            if (e.DataView.Contains(StandardDataFormats.StorageItems))
-            {
-                var items = await e.DataView.GetStorageItemsAsync();
-                var paths = items.Select(i => i.Path).ToList();
-
-                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, true);
-                RefreshInstalledPluginsList();
-                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a plugins.");
-            }
-        }
-
-        private async void DropZoneMods_Drop(object sender, DragEventArgs e)
-        {
-            if (_serverManager?.ActiveProfile == null || _pluginModManager == null) return;
-
-            if (e.DataView.Contains(StandardDataFormats.StorageItems))
-            {
-                var items = await e.DataView.GetStorageItemsAsync();
-                var paths = items.Select(i => i.Path).ToList();
-
-                _pluginModManager.CopyImportedFiles(_serverManager.ActiveProfile.DirectoryPath, paths, false);
-                RefreshInstalledModsList();
-                AppendConsoleLog($"[Zenith] Se importaron {paths.Count} archivos/carpetas a mods.");
-            }
-        }
-
-        #endregion
-
-        #region File Manager & Code Editor (TreeView Edition)
-
-        private bool IsPluginMode()
-        {
-            if (_serverManager?.ActiveProfile == null) return true;
-            string loader = _serverManager.ActiveProfile.SoftwareType.ToLower();
-            return !loader.Contains("fabric") && !loader.Contains("forge");
-        }
-
-        private void RefreshFileList()
-        {
-            if (_serverManager == null || TreeFileExplorer == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            if (!Directory.Exists(profile.DirectoryPath))
-            {
-                Directory.CreateDirectory(profile.DirectoryPath);
-            }
-
-            var treeRoot = FileTreeNode.BuildTree(profile.DirectoryPath);
-            TreeFileExplorer.ItemsSource = new List<FileTreeNode> { treeRoot };
-        }
-
-        private void BtnRefreshFiles_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshFileList();
-        }
-
-        private void TreeFileExplorer_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
-        {
-            if (_fileManager == null || args.InvokedItem is not FileTreeNode node) return;
-
-            _selectedFileTreeNode = node;
-            if (TxtEditingFileName != null) TxtEditingFileName.Text = node.Name;
-
-            if (!node.IsDirectory)
-            {
-                string content = _fileManager.ReadFileText(node.FullPath);
-                if (TxtCodeEditor != null) TxtCodeEditor.Text = content;
-                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Editando: {node.RelativePath} ({node.FormattedSize})";
-            }
-            else
-            {
-                if (TxtCodeEditor != null) TxtCodeEditor.Text = "// [Carpeta seleccionada]";
-                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta: {node.RelativePath}";
-            }
-        }
-
-        private void BtnSaveFileContent_Click(object sender, RoutedEventArgs e)
-        {
-            if (_fileManager != null && _selectedFileTreeNode != null && !_selectedFileTreeNode.IsDirectory && TxtCodeEditor != null)
-            {
-                _fileManager.SaveFileText(_selectedFileTreeNode.FullPath, TxtCodeEditor.Text);
-                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"¡Guardado exitosamente a las {DateTime.Now:HH:mm:ss}!";
-                RefreshFileList();
-            }
-        }
-
-        private void BtnNewFile_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager == null || _fileManager == null) return;
-            var profile = _serverManager.ActiveProfile;
-            if (profile == null) return;
-
-            string targetDir = profile.DirectoryPath;
-            if (_selectedFileTreeNode != null)
-            {
-                targetDir = _selectedFileTreeNode.IsDirectory ? _selectedFileTreeNode.FullPath : Path.GetDirectoryName(_selectedFileTreeNode.FullPath) ?? profile.DirectoryPath;
-            }
-
-            string newFileName = $"config_custom_{DateTime.Now:mm_ss}.txt";
-            string newFilePath = Path.Combine(targetDir, newFileName);
-            _fileManager.CreateFile(newFilePath, "# Archivo creado desde Zenith MC Server Launcher\n");
-            RefreshFileList();
-        }
-
-        private void BtnDeleteFile_Click(object sender, RoutedEventArgs e)
-        {
-            if (_fileManager != null && _selectedFileTreeNode != null)
-            {
-                _fileManager.DeleteItem(_selectedFileTreeNode.FullPath);
-                if (TxtCodeEditor != null) TxtCodeEditor.Text = string.Empty;
-                if (TxtEditingFileName != null) TxtEditingFileName.Text = "Ningún archivo seleccionado";
-                _selectedFileTreeNode = null;
-                RefreshFileList();
-            }
-        }
-
-        #endregion
-
-        #region Java Runtimes & Launcher Settings
-
-        private void LoadJavaRuntimesUI()
-        {
-            if (_javaService == null || LstJavaVersions == null) return;
-            var versions = _javaService.GetAvailableJavaVersions();
-            LstJavaVersions.ItemsSource = versions;
-        }
-
-        private void LstJavaVersions_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-        }
-
-        private async void BtnInstallJavaItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.Tag is JavaVersionOption option && _javaService != null)
-            {
-                btn.IsEnabled = false;
-                if (JavaDownloadProgress != null) JavaDownloadProgress.Visibility = Visibility.Visible;
-                if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"Descargando {option.Name}...";
-
-                try
-                {
-                    string path = await _javaService.DownloadAndExtractJavaAsync(option, p =>
-                    {
-                        DispatcherQueue.TryEnqueue(() => { if (JavaDownloadProgress != null) JavaDownloadProgress.Value = p; });
-                    });
-
-                    if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"¡Java {option.MajorVersion} instalado correctamente!";
-                    LoadJavaRuntimesUI();
-                }
-                catch (Exception ex)
-                {
-                    if (TxtJavaProgressStatus != null) TxtJavaProgressStatus.Text = $"Error instalando JDK: {ex.Message}";
-                }
-                finally
-                {
-                    btn.IsEnabled = true;
-                    if (JavaDownloadProgress != null) JavaDownloadProgress.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private void LoadLauncherSettingsUI()
-        {
-            if (_javaService != null && TxtCustomJavaPath != null)
-            {
-                TxtCustomJavaPath.Text = _javaService.RuntimesDirectory;
-            }
-            if (_serverManager?.ActiveProfile != null && TxtExternalEditorExecutablePath != null)
-            {
-                TxtExternalEditorExecutablePath.Text = _serverManager.ActiveProfile.ExternalEditorPath;
-            }
-        }
-
-        private void BtnSaveExternalEditor_Click(object sender, RoutedEventArgs e)
-        {
-            if (_serverManager?.ActiveProfile != null && TxtExternalEditorExecutablePath != null)
-            {
-                _serverManager.ActiveProfile.ExternalEditorPath = TxtExternalEditorExecutablePath.Text.Trim();
-                _serverManager.UpdateProfile(_serverManager.ActiveProfile);
-                AppendConsoleLog("[Zenith] Editor de texto externo actualizado.");
-            }
-        }
-
-        private void BtnResetJavaPath_Click(object sender, RoutedEventArgs e)
-        {
-            string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZenithMCServer", "runtimes", "java");
-            _javaService?.SetCustomRuntimesDirectory(defaultDir);
-            LoadLauncherSettingsUI();
-            LoadJavaRuntimesUI();
+            UpdateStatusIndicator(false);
+            AppendConsoleLog($"[Zenith] El servidor se ha detenido con código de salida: {exitCode}");
         }
 
         #endregion

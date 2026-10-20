@@ -1,0 +1,153 @@
+<Page
+    x:Class="Zenith_MC_Server.Views.ServerConfigPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Text="Configuración Visual del Servidor" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Ajustes de Hardware, RAM, JVM, server.properties, eula.txt, spigot.yml y paper.yml." FontSize="12" Foreground="#BBBBBB"/>
+        </StackPanel>
+
+        <TabView Grid.Row="1" IsAddTabButtonVisible="False">
+            <TabViewItem Header="Hardware y JVM" IsClosable="False">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16" Margin="0,12,0,0">
+                        <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Memoria RAM y Java Exe" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="Asignación de Memoria RAM" FontSize="12"/>
+                                        <ComboBox x:Name="CmbRamAllocation" SelectedIndex="1" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="2 GB"/>
+                                            <ComboBoxItem Content="4 GB"/>
+                                            <ComboBoxItem Content="8 GB"/>
+                                            <ComboBoxItem Content="16 GB"/>
+                                            <ComboBoxItem Content="24 GB"/>
+                                            <ComboBoxItem Content="32 GB"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Ejecutable Java Custom" FontSize="12"/>
+                                        <TextBox x:Name="TxtServerCustomJavaExe" PlaceholderText="Ej: C:\Program Files\Java\jdk-21\bin\java.exe"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Argumentos Personalizados JVM" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                <TextBox x:Name="TxtCustomJvmArgs" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas" Height="80"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabViewItem>
+
+            <TabViewItem Header="server.properties" IsClosable="False">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16" Margin="0,12,0,0">
+                        <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Aceptar EULA de Minecraft (eula.txt)" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
+                                    <TextBlock Text="Requerido para que el servidor inicie correctamente." FontSize="12" Foreground="#AAAAAA"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="ToggleEula" Grid.Column="1" OffContent="No Aceptado" OnContent="Aceptado (eula=true)"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="Propiedades Principales" FontSize="15" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                                <Grid RowSpacing="12" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="MOTD (Mensaje del Día)" FontSize="12"/>
+                                        <TextBox x:Name="CfgMotd" Text="A Minecraft Server"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Jugadores Máximos" FontSize="12"/>
+                                        <TextBox x:Name="CfgMaxPlayers" Text="20"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="Puerto" FontSize="12"/>
+                                        <TextBox x:Name="CfgServerPort" Text="25565"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Center">
+                                        <ToggleSwitch x:Name="CfgOnlineMode" Header="Modo Online (Cuentas Premium)" OffContent="No" OnContent="Sí"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">
+                                        <ToggleSwitch x:Name="CfgPvp" Header="Permitir PVP" OffContent="No" OnContent="Sí"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+                                        <ToggleSwitch x:Name="CfgAllowFlight" Header="Permitir Vuelo" OffContent="No" OnContent="Sí"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabViewItem>
+
+            <TabViewItem Header="paper-global.yml" IsClosable="False">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TxtPaperConfigEditor" AcceptsReturn="True" FontFamily="Consolas" FontSize="13" Background="#40140C1D" Foreground="#E2E8F0"/>
+                    <Button Grid.Row="1" Content="Guardar paper-global.yml" Click="BtnSavePaperConfig_Click" Background="#7C3AED" Foreground="White" Margin="0,8,0,0" HorizontalAlignment="Right" CornerRadius="8"/>
+                </Grid>
+            </TabViewItem>
+
+            <TabViewItem Header="spigot.yml" IsClosable="False">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TxtSpigotConfigEditor" AcceptsReturn="True" FontFamily="Consolas" FontSize="13" Background="#40140C1D" Foreground="#E2E8F0"/>
+                    <Button Grid.Row="1" Content="Guardar spigot.yml" Click="BtnSaveSpigotConfig_Click" Background="#7C3AED" Foreground="White" Margin="0,8,0,0" HorizontalAlignment="Right" CornerRadius="8"/>
+                </Grid>
+            </TabViewItem>
+        </TabView>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0,12,0,0">
+            <Button Content="Guardar Configuración" Click="BtnSaveConfig_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="18,8"/>
+        </StackPanel>
+    </Grid>
+</Page>
