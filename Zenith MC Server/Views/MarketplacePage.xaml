@@ -155,7 +155,7 @@
                 <TabViewItem Header="Imágenes / Galería" IsClosable="False">
                     <Grid Padding="16">
                         <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <SymbolIcon Symbol="Pictures" FontSize="36"/>
+                            <FontIcon Glyph="&#xEB9F;" FontSize="36"/>
                             <TextBlock Text="Vista previa e imágenes del proyecto proporcionadas por la API." FontSize="12" Foreground="#888888"/>
                         </StackPanel>
                     </Grid>
