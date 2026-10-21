@@ -60,6 +60,7 @@ namespace Zenith_MC_Server
 
             RefreshServerProfilesUI();
             UpdateStatusIndicator(false);
+            UpdateNavViewVisibility();
 
             // Default Desktop Acrylic Theme
             this.SystemBackdrop = new DesktopAcrylicBackdrop();
@@ -101,9 +102,36 @@ namespace Zenith_MC_Server
             {
                 LstServerProfilesDialog.ItemsSource = profiles;
             }
+            UpdateNavViewVisibility();
         }
 
-        public void StartActiveServer()
+        public void UpdateNavViewVisibility()
+        {
+            if (NavItemPlugins == null || NavItemMods == null) return;
+
+            var profile = ActiveProfile;
+            if (profile == null)
+            {
+                NavItemPlugins.Visibility = Visibility.Visible;
+                NavItemMods.Visibility = Visibility.Visible;
+                return;
+            }
+
+            string soft = profile.SoftwareType.ToLowerInvariant();
+            bool supportsPlugins = soft.Contains("paper") || soft.Contains("spigot") || soft.Contains("purpur") || soft.Contains("bukkit") || soft.Contains("mohist") || soft.Contains("ar権") || soft.Contains("magma");
+            bool supportsMods = soft.Contains("fabric") || soft.Contains("forge") || soft.Contains("neoforge") || soft.Contains("quilt") || soft.Contains("mohist") || soft.Contains("ar権") || soft.Contains("magma");
+
+            if (!supportsPlugins && !supportsMods)
+            {
+                supportsPlugins = true;
+                supportsMods = true;
+            }
+
+            NavItemPlugins.Visibility = supportsPlugins ? Visibility.Visible : Visibility.Collapsed;
+            NavItemMods.Visibility = supportsMods ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public async void StartActiveServer()
         {
             var profile = ActiveProfile;
             if (profile == null) return;
@@ -119,7 +147,16 @@ namespace Zenith_MC_Server
                 var jarFiles = Directory.GetFiles(serverDir, "*.jar");
                 if (jarFiles.Length == 0)
                 {
-                    AppendConsoleLog("[Zenith] Error: No se encontró ningún archivo server.jar en la carpeta del servidor activo.");
+                    AppendConsoleLog("[Zenith] Descargando motor de servidor...");
+                    string downloadedJar = await _downloadService.DownloadServerJarForVersionAsync(profile.SoftwareType, profile.Version, serverDir);
+                    profile.JarFileName = Path.GetFileName(downloadedJar);
+                    _serverManager.UpdateProfile(profile);
+                    jarFiles = Directory.GetFiles(serverDir, "*.jar");
+                }
+
+                if (jarFiles.Length == 0)
+                {
+                    AppendConsoleLog("[Zenith Error] No se encontró ni pudo descargarse un archivo server.jar.");
                     return;
                 }
 
@@ -129,10 +166,28 @@ namespace Zenith_MC_Server
                 string javaPath = profile.JavaExecutablePath;
                 if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
                 {
-                    int reqJava = _downloadService?.GetRecommendedJavaVersion(profile.Version) ?? 21;
-                    var targetJava = _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => v.MajorVersion == reqJava && File.Exists(v.InstalledPath))
-                                   ?? _javaService?.GetAvailableJavaVersions().FirstOrDefault(v => File.Exists(v.InstalledPath));
-                    javaPath = targetJava != null ? targetJava.InstalledPath : "java";
+                    int reqJava = _downloadService.GetRecommendedJavaVersion(profile.Version);
+                    var javaOptions = _javaService.GetAvailableJavaVersions();
+                    var targetOption = javaOptions.FirstOrDefault(j => j.MajorVersion == reqJava) ?? javaOptions.FirstOrDefault();
+                    if (targetOption != null)
+                    {
+                        if (!File.Exists(targetOption.InstalledPath))
+                        {
+                            AppendConsoleLog($"[Zenith] Descargando entorno Java {targetOption.MajorVersion} interno...");
+                            javaPath = await _javaService.DownloadAndExtractJavaAsync(targetOption);
+                        }
+                        else
+                        {
+                            javaPath = targetOption.InstalledPath;
+                        }
+                        profile.JavaExecutablePath = javaPath;
+                        _serverManager.UpdateProfile(profile);
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
+                {
+                    javaPath = "java";
                 }
 
                 AppendConsoleLog($"[Zenith] Iniciando servidor '{profile.Name}' ({jarPath}) con {ramGb}GB RAM usando Java: {javaPath}...");
@@ -181,7 +236,7 @@ namespace Zenith_MC_Server
             _isServerRunning = isRunning;
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (StatusIndicatorDot != null) StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 34, 197, 94) : Color.FromArgb(255, 239, 68, 68));
+                if (StatusIndicatorDot != null) StatusIndicatorDot.Fill = new SolidColorBrush(isRunning ? Color.FromArgb(255, 240, 240, 240) : Color.FromArgb(255, 120, 120, 120));
                 if (StatusIndicatorText != null) StatusIndicatorText.Text = isRunning ? "Servidor En Ejecución" : "Servidor Detenido";
 
                 if (ContentFrame.Content is DashboardPage dashPage)
@@ -235,17 +290,21 @@ namespace Zenith_MC_Server
             {
                 configPage.Initialize(this);
             }
-            else if (e.Content is MarketplacePage marketPage)
+            else if (e.Content is PluginsPage pluginsPage)
             {
-                marketPage.Initialize(this);
+                pluginsPage.Initialize(this);
+            }
+            else if (e.Content is ModsPage modsPage)
+            {
+                modsPage.Initialize(this);
+            }
+            else if (e.Content is ModPluginDetailsPage detailsPage)
+            {
+                detailsPage.Initialize(this);
             }
             else if (e.Content is FileManagerPage filePage)
             {
                 filePage.Initialize(this);
-            }
-            else if (e.Content is JavaPage javaPage)
-            {
-                javaPage.Initialize(this);
             }
             else if (e.Content is SettingsPage settingsPage)
             {
@@ -353,6 +412,11 @@ namespace Zenith_MC_Server
             }
         }
 
+        public void OpenModPluginDetails(MarketplaceItem item)
+        {
+            ContentFrame.Navigate(typeof(ModPluginDetailsPage), item);
+        }
+
         public void NavigateToTag(string tag, bool recordHistory = true)
         {
             if (recordHistory && (_navigationHistory.Count == 0 || _navigationHistory.Peek() != tag))
@@ -372,15 +436,16 @@ namespace Zenith_MC_Server
                 case "Config":
                     ContentFrame.Navigate(typeof(ServerConfigPage));
                     break;
-                case "Marketplace":
-                    ContentFrame.Navigate(typeof(MarketplacePage));
+                case "Plugins":
+                    ContentFrame.Navigate(typeof(PluginsPage));
+                    break;
+                case "Mods":
+                    ContentFrame.Navigate(typeof(ModsPage));
                     break;
                 case "FileManager":
                     ContentFrame.Navigate(typeof(FileManagerPage));
                     break;
                 case "JavaRuntimes":
-                    ContentFrame.Navigate(typeof(JavaPage));
-                    break;
                 case "Settings":
                 case "LauncherSettings":
                     ContentFrame.Navigate(typeof(SettingsPage));
