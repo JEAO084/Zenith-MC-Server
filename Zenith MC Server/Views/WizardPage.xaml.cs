@@ -124,7 +124,6 @@ namespace Zenith_MC_Server.Views
 
             BtnFinishWizard.IsEnabled = false;
             BtnFinishWizard.Content = "⏳ Creando Servidor...";
-            BtnFinishWizard.Visibility = Visibility.Collapsed;
             WzdProgressBar.Visibility = Visibility.Visible;
 
             try

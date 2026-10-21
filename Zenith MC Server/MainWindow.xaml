@@ -7,21 +7,49 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="ZENITH MC SERVER" >
+    Title="ZENITH MC SERVER">
 
     <Window.SystemBackdrop>
-        <DesktopAcrylicBackdrop/>
+        <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" Background="Transparent" PointerPressed="RootGrid_PointerPressed">
+    <Grid x:Name="RootGrid" Background="#20000000" PointerPressed="RootGrid_PointerPressed">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TitleBar x:Name="TitleBar" Title="ZENITH MC SERVER" HorizontalAlignment="Stretch" IsBackButtonVisible="True" IsPaneToggleButtonVisible="True" PaneToggleRequested="TitleBar_PaneToggleRequested" BackRequested="TitleBar_BackRequested"  Background="Transparent">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch" Spacing="10">
+        <!-- Custom Acrylic TitleBar Grid for SetTitleBar(AppTitleBar) -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="48" Background="#20000000" Padding="12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Navigation Controls (Header Left) -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button x:Name="BtnNavigateBack" Click="BtnNavigateBack_Click" VerticalAlignment="Center" Padding="8,6" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Atrás (Botón 4 / Mouse Side)">
+                    <SymbolIcon Symbol="Back"/>
+                </Button>
+                <Button x:Name="BtnTogglePane" Click="BtnTogglePane_Click" VerticalAlignment="Center" Padding="8,6" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Alternar Panel">
+                    <SymbolIcon Symbol="AllApps"/>
+                </Button>
+            </StackPanel>
+
+            <!-- App Title & Subtitle -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="12,0,0,0">
+                <FontIcon Glyph="&#xE700;" FontSize="16" VerticalAlignment="Center"/>
+                <TextBlock Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Server Selector & Profile Controls (Center) -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
                 <ComboBox x:Name="CmbServerSelector" Width="180" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
+
+                <!-- Minimalist Icon Button for Server Profile Manager -->
                 <Button Click="BtnManageServers_Click" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Administrar Servidores">
                     <SymbolIcon Symbol="Setting"/>
                 </Button>
@@ -30,17 +58,21 @@
                 <Button Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Crear Servidor">
                     <SymbolIcon Symbol="Add"/>
                 </Button>
+            </StackPanel>
+
+            <!-- Status Indicator (Right) -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
                 <Border Background="#20000000" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#30FFFFFF">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
-                        <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="11" Foreground="#DDDDDD" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Center"/>
+                        <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="11" Foreground="#DDDDDD" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
-        </TitleBar>
+        </Grid>
 
         <!-- Main Navigation View -->
-        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="LeftCompact" SelectionChanged="NavView_SelectionChanged" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False">
+        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="True" IsBackButtonVisible="Auto" BackRequested="NavView_BackRequested" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
                     <NavigationViewItem.Icon>

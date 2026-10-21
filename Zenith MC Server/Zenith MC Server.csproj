@@ -13,6 +13,10 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Enforce C# and XAML Hot Reload support for Visual Studio and WinUI 3 -->
+    <EnableHotReload>true</EnableHotReload>
+    <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
   </PropertyGroup>
 
   <ItemGroup>
