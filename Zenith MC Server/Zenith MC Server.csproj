@@ -26,6 +26,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Page Update="App.xaml" SubType="Designer" />
+    <Page Update="MainWindow.xaml" SubType="Designer" />
+    <Page Update="Views\DashboardPage.xaml" SubType="Designer" />
+    <Page Update="Views\FileManagerPage.xaml" SubType="Designer" />
+    <Page Update="Views\ModPluginDetailsPage.xaml" SubType="Designer" />
+    <Page Update="Views\ModsPage.xaml" SubType="Designer" />
+    <Page Update="Views\PluginsPage.xaml" SubType="Designer" />
+    <Page Update="Views\ServerConfigPage.xaml" SubType="Designer" />
+    <Page Update="Views\SettingsPage.xaml" SubType="Designer" />
+    <Page Update="Views\WizardPage.xaml" SubType="Designer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
