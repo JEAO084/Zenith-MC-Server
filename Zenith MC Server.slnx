@@ -3,7 +3,10 @@
     <Platform Name="ARM64" />
     <Platform Name="x64" />
     <Platform Name="x86" />
+    <Platform Name="Any CPU" />
   </Configurations>
+  <Project Path="Zenith.Core/Zenith.Core.csproj" />
+  <Project Path="Zenith.Tests/Zenith.Tests.csproj" />
   <Project Path="Zenith MC Server/Zenith MC Server.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
