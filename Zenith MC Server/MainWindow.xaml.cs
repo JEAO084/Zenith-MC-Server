@@ -53,6 +53,10 @@ namespace Zenith_MC_Server
             RefreshServerProfilesUI();
             UpdateStatusIndicator(false);
 
+            // Default Desktop Acrylic Theme
+            this.SystemBackdrop = new DesktopAcrylicBackdrop();
+            ApplyThemeMode("Oscuro");
+
             NavigateToTag("Dashboard");
         }
 
@@ -169,32 +173,33 @@ namespace Zenith_MC_Server
 
         public void ApplyThemeMode(string choice)
         {
+            this.SystemBackdrop = new DesktopAcrylicBackdrop();
+
             if (choice.Contains("Claro"))
             {
+                // Native Light WinUI + Translucent Acrylic + Inverted Dark Accent (#0F172A)
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Light;
-                this.SystemBackdrop = null;
-                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 243, 244, 246));
-                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 229, 231, 235));
-                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 17, 24, 39));
-                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 55, 65, 81));
-            }
-            else if (choice.Contains("Transparente"))
-            {
-                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
-                this.SystemBackdrop = new DesktopAcrylicBackdrop();
-                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(64, 17, 11, 24));
-                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(64, 26, 16, 36));
-                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 240, 240, 240));
+                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
+                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 51, 65, 85));
+
+                if (BrandLogoBorder != null) BrandLogoBorder.Background = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
+                if (BrandLogoText != null) BrandLogoText.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
             }
             else
             {
+                // Native Dark WinUI + Translucent Acrylic + Inverted Light Accent (#F8FAFC)
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
-                this.SystemBackdrop = null;
-                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(255, 17, 11, 24));
-                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(255, 26, 16, 36));
+
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
+                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 16, 16, 16));
                 if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 204, 204, 204));
+                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 203, 213, 225));
+
+                if (BrandLogoBorder != null) BrandLogoBorder.Background = new SolidColorBrush(Color.FromArgb(255, 248, 250, 252));
+                if (BrandLogoText != null) BrandLogoText.Foreground = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
             }
         }
 

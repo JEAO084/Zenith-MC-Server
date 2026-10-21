@@ -20,9 +20,9 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="#401E1428" CornerRadius="12" Padding="18" Margin="0,0,8,0" BorderBrush="#3A2352" BorderThickness="1">
+            <Border Grid.Column="0" Background="#20888888" CornerRadius="12" Padding="18" Margin="0,0,8,0" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Control de Ejecución del Servidor" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
+                    <TextBlock Text="Control de Ejecución del Servidor" FontWeight="SemiBold" FontSize="14"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button x:Name="BtnStartServer" Content="▶ Iniciar Servidor" Click="BtnStartServer_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="16,8"/>
                         <Button x:Name="BtnStopServer" Content="⏹ Detener Servidor" Click="BtnStopServer_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="16,8" IsEnabled="False"/>
@@ -30,18 +30,18 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="1" Background="#401E1428" CornerRadius="12" Padding="18" Margin="8,0,0,0" BorderBrush="#3A2352" BorderThickness="1">
+            <Border Grid.Column="1" Background="#20888888" CornerRadius="12" Padding="18" Margin="8,0,0,0" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Información del Servidor Activo" FontWeight="SemiBold" FontSize="14" Foreground="#BBBBBB"/>
-                    <TextBlock x:Name="TxtActiveServerName" Text="Servidor: Servidor Principal" FontSize="13" Foreground="#38BDF8" FontWeight="Bold"/>
-                    <TextBlock x:Name="TxtActiveSoftware" Text="Motor: Paper 1.20.4" FontSize="12" Foreground="#DDDDDD"/>
-                    <TextBlock x:Name="TxtActivePort" Text="Puerto TCP: 25565" FontSize="12" Foreground="#DDDDDD"/>
+                    <TextBlock Text="Información del Servidor Activo" FontWeight="SemiBold" FontSize="14"/>
+                    <TextBlock x:Name="TxtActiveServerName" Text="Servidor: Servidor Principal" FontSize="13" FontWeight="Bold"/>
+                    <TextBlock x:Name="TxtActiveSoftware" Text="Motor: Paper 1.20.4" FontSize="12"/>
+                    <TextBlock x:Name="TxtActivePort" Text="Puerto TCP: 25565" FontSize="12"/>
                 </StackPanel>
             </Border>
         </Grid>
 
         <!-- Terminal Console Area -->
-        <Border x:Name="ConsoleContainerBorder" Grid.Row="1" Background="#40140C1D" CornerRadius="12" Padding="14" BorderBrush="#3A2352" BorderThickness="1">
+        <Border x:Name="ConsoleContainerBorder" Grid.Row="1" Background="#30000000" CornerRadius="12" Padding="14" BorderBrush="#30888888" BorderThickness="1">
             <ScrollViewer x:Name="ConsoleScrollViewer" VerticalScrollBarVisibility="Auto">
                 <TextBox x:Name="TxtConsoleLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Consolas, Courier New" FontSize="13" Background="Transparent" Foreground="#38BDF8" BorderThickness="0"/>
             </ScrollViewer>
@@ -58,12 +58,12 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <Border x:Name="CmdSuggestionContainer" Grid.Row="0" Grid.Column="0" Background="#1E1428" BorderBrush="#7C3AED" BorderThickness="1" CornerRadius="8" Margin="0,0,8,4" Visibility="Collapsed" Canvas.ZIndex="100">
+            <Border x:Name="CmdSuggestionContainer" Grid.Row="0" Grid.Column="0" Background="#30000000" BorderBrush="#30888888" BorderThickness="1" CornerRadius="8" Margin="0,0,8,4" Visibility="Collapsed" Canvas.ZIndex="100">
                 <ListView x:Name="LstCmdSuggestions" MaxHeight="120" SelectionChanged="LstCmdSuggestions_SelectionChanged"/>
             </Border>
 
             <TextBox x:Name="TxtConsoleInput" Grid.Row="1" Grid.Column="0" PlaceholderText="Ingresa un comando de servidor (ej: gamemode creative, op player, tp)..." TextChanged="TxtConsoleInput_TextChanged" KeyDown="TxtConsoleInput_KeyDown" CornerRadius="8" Margin="0,0,8,0"/>
-            <Button x:Name="BtnSendCommand" Grid.Row="1" Grid.Column="1" Content="Enviar Comando" Click="BtnSendCommand_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="18,8"/>
+            <Button x:Name="BtnSendCommand" Grid.Row="1" Grid.Column="1" Content="Enviar Comando" Click="BtnSendCommand_Click" FontWeight="Bold" CornerRadius="8" Padding="18,8"/>
         </Grid>
     </Grid>
 </Page>

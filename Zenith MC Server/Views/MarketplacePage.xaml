@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
-            <TextBlock Text="Catálogo de Descargas de Plugins y Mods" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Catálogo de Descargas de Plugins y Mods" FontSize="22" FontWeight="Bold"/>
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="160"/>
@@ -57,7 +57,7 @@
         <GridView Grid.Row="1" x:Name="GrdMarketplaceItems" IsItemClickEnabled="True">
             <GridView.ItemTemplate>
                 <DataTemplate>
-                    <Border Width="260" Height="150" Background="#401E1428" CornerRadius="12" Padding="14" Margin="6" BorderBrush="#3A2352" BorderThickness="1">
+                    <Border Width="260" Height="150" Background="#20888888" CornerRadius="12" Padding="14" Margin="6" BorderBrush="#30888888" BorderThickness="1">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -75,13 +75,13 @@
                                         <BitmapImage UriSource="{Binding IconUrl}" />
                                     </Image.Source>
                                 </Image>
-                                <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <TextBlock Grid.Row="1" Text="{Binding Summary}" FontSize="11" Foreground="#CCCCCC" TextWrapping="Wrap" MaxLines="2" Margin="0,6,0,0"/>
+                            <TextBlock Grid.Row="1" Text="{Binding Summary}" FontSize="11" TextWrapping="Wrap" MaxLines="2" Margin="0,6,0,0"/>
 
                             <Grid Grid.Row="2" Margin="0,6,0,0">
-                                <TextBlock Text="{Binding FormattedDownloads}" FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding FormattedDownloads}" FontSize="10" VerticalAlignment="Center"/>
                                 <Button Content="Instalar" Tag="{Binding}" Click="BtnInstallItem_Click" Background="#22C55E" Foreground="White" CornerRadius="6" HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
                             </Grid>
                         </Grid>
@@ -92,7 +92,7 @@
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12" Margin="0,12,0,0">
             <Button x:Name="BtnPrevPage" Content="◀ Anterior" Click="BtnPrevPage_Click" CornerRadius="8"/>
-            <TextBlock x:Name="TxtPageNumber" Text="Página 1" VerticalAlignment="Center" FontWeight="Bold" Foreground="#38BDF8"/>
+            <TextBlock x:Name="TxtPageNumber" Text="Página 1" VerticalAlignment="Center" FontWeight="Bold"/>
             <Button x:Name="BtnNextPage" Content="Siguiente ▶" Click="BtnNextPage_Click" CornerRadius="8"/>
         </StackPanel>
     </Grid>

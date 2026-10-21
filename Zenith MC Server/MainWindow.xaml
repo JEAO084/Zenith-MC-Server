@@ -13,14 +13,14 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" Background="#40110B18" PointerPressed="RootGrid_PointerPressed">
+    <Grid x:Name="RootGrid" Background="#20000000" PointerPressed="RootGrid_PointerPressed">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Custom Integrated Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#401A1024" Height="48" Padding="16,0">
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#20101010" Height="48" Padding="16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -29,26 +29,26 @@
 
             <!-- Brand Logo & Title -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <Border x:Name="BrandLogoBorder" Background="#7C3AED" CornerRadius="8" Width="32" Height="32">
-                    <TextBlock Text="Z" Foreground="White" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Border x:Name="BrandLogoBorder" Background="#F8FAFC" CornerRadius="8" Width="32" Height="32">
+                    <TextBlock x:Name="BrandLogoText" Text="Z" Foreground="#0F172A" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock x:Name="TxtAppTitle" Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Thin Edition)" FontSize="10" Foreground="#A0A0A0"/>
+                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Inverted Edition)" FontSize="10" Foreground="#888888"/>
                 </StackPanel>
             </StackPanel>
 
             <!-- Active Server Selector & Navigation Back -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
-                <Button Content="← Atrás (Botón 4)" Click="BtnNavigateBack_Click" Background="#2C1D3B" Foreground="White" CornerRadius="6" Padding="8,4" FontSize="11" BorderBrush="#3A2352" BorderThickness="1"/>
+                <Button Content="← Atrás (Botón 4)" Click="BtnNavigateBack_Click" CornerRadius="6" Padding="8,4" FontSize="11"/>
                 <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
                 <ComboBox x:Name="CmbServerSelector" Width="200" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
-                <Button Content="+ Crear Servidor (Wizard)" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
+                <Button Content="+ Crear Servidor" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
             </StackPanel>
 
             <!-- Server Running Status Indicator -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
-                <Border Background="#1C2B20" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#4000FF66">
+                <Border Background="#20000000" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#30FFFFFF">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
                         <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="11" Foreground="#DDDDDD" FontWeight="SemiBold"/>

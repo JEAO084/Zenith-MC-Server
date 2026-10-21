@@ -8,11 +8,11 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <StackPanel Spacing="16">
-            <TextBlock Text="Ajustes Globales del Launcher" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Ajustes Globales del Launcher" FontSize="22" FontWeight="Bold"/>
 
-            <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+            <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Editor de Texto Externo" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                    <TextBlock Text="Editor de Texto Externo" FontSize="16" FontWeight="SemiBold"/>
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -24,9 +24,9 @@
                 </StackPanel>
             </Border>
 
-            <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+            <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Comportamiento y Automatización" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                    <TextBlock Text="Comportamiento y Automatización" FontSize="16" FontWeight="SemiBold"/>
                     <ToggleSwitch Header="Aceptar EULA automáticamente" IsOn="True"/>
                     <ToggleSwitch Header="Reinicio automático del servidor" IsOn="False"/>
                 </StackPanel>

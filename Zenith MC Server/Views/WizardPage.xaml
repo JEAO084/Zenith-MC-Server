@@ -8,9 +8,9 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <StackPanel Spacing="20">
-            <TextBlock Text="Asistente de Creación de Servidor Paso a Paso" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Asistente de Creación de Servidor Paso a Paso" FontSize="22" FontWeight="Bold"/>
 
-            <Grid Background="#401E1428" Padding="16" CornerRadius="12" BorderBrush="#3A2352" BorderThickness="1">
+            <Grid Background="#20888888" Padding="16" CornerRadius="12" BorderBrush="#30888888" BorderThickness="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -19,28 +19,28 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                    <Border Background="#888888" Width="28" Height="28" CornerRadius="14">
                         <TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Nombre y Versión" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                    <Border Background="#888888" Width="28" Height="28" CornerRadius="14">
                         <TextBlock Text="2" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Loader / Motor" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                    <Border Background="#888888" Width="28" Height="28" CornerRadius="14">
                         <TextBlock Text="3" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Entorno Java" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
-                    <Border Background="#7C3AED" Width="28" Height="28" CornerRadius="14">
+                    <Border Background="#888888" Width="28" Height="28" CornerRadius="14">
                         <TextBlock Text="4" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="RAM y Parámetros" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"/>
@@ -48,9 +48,9 @@
             </Grid>
 
             <StackPanel Spacing="16">
-                <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Parte 1: Nombre, Logo e Identidad" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                        <TextBlock Text="Parte 1: Nombre, Logo e Identidad" FontSize="16" FontWeight="SemiBold"/>
 
                         <Grid ColumnSpacing="16" RowSpacing="12">
                             <Grid.ColumnDefinitions>
@@ -89,9 +89,9 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                        <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold"/>
                         <ComboBox x:Name="WzdCmbLoader" HorizontalAlignment="Stretch" SelectedIndex="0">
                             <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
                             <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
@@ -102,21 +102,21 @@
                     </StackPanel>
                 </Border>
 
-                <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Parte 3: Requisito Estricto de Java" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
-                        <Border Background="#2C1D3B" Padding="12" CornerRadius="8">
+                        <TextBlock Text="Parte 3: Requisito Estricto de Java" FontSize="16" FontWeight="SemiBold"/>
+                        <Border Background="#30000000" Padding="12" CornerRadius="8">
                             <StackPanel Spacing="6">
-                                <TextBlock x:Name="WzdTxtJavaRequirement" Text="Requisito Detectado: Java 21" FontWeight="Bold" Foreground="#38BDF8"/>
-                                <TextBlock x:Name="WzdTxtJavaStatus" Text="Estado: Verificando disponibilidad..." FontSize="12" Foreground="#DDDDDD"/>
+                                <TextBlock x:Name="WzdTxtJavaRequirement" Text="Requisito Detectado: Java 21" FontWeight="Bold"/>
+                                <TextBlock x:Name="WzdTxtJavaStatus" Text="Estado: Verificando disponibilidad..." FontSize="12"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
                 </Border>
 
-                <Border Background="#401E1428" CornerRadius="12" Padding="18" BorderBrush="#3A2352" BorderThickness="1">
+                <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Parte 4: RAM, Optimización JVM y Puerto" FontSize="16" FontWeight="SemiBold" Foreground="#A78BFA"/>
+                        <TextBlock Text="Parte 4: RAM, Optimización JVM y Puerto" FontSize="16" FontWeight="SemiBold"/>
 
                         <Grid ColumnSpacing="16">
                             <Grid.ColumnDefinitions>
@@ -145,7 +145,7 @@
 
                         <StackPanel Spacing="6" HorizontalAlignment="Right" Margin="0,12,0,0">
                             <ProgressBar x:Name="WzdProgressBar" Value="0" Maximum="100" Height="8" Visibility="Collapsed"/>
-                            <TextBlock x:Name="WzdTxtProgressStatus" Text="" FontSize="11" Foreground="#38BDF8" HorizontalAlignment="Right"/>
+                            <TextBlock x:Name="WzdTxtProgressStatus" Text="" FontSize="11" HorizontalAlignment="Right"/>
                             <Button x:Name="BtnFinishWizard" Content="🚀 Finalizar y Crear Servidor" Click="BtnFinishWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" HorizontalAlignment="Right"/>
                         </StackPanel>
                     </StackPanel>
