@@ -27,6 +27,7 @@ namespace Zenith_MC_Server
 
         private readonly Stack<string> _navigationHistory = new();
         private bool _isServerRunning = false;
+        private ServerProfile? _pendingDeleteProfile;
 
         public MainWindow()
         {
@@ -275,6 +276,7 @@ namespace Zenith_MC_Server
             if (ServerManagerDialog != null)
             {
                 ServerManagerDialog.XamlRoot = RootGrid.XamlRoot;
+                if (InlineDeleteConfirmBorder != null) InlineDeleteConfirmBorder.Visibility = Visibility.Collapsed;
                 RefreshServerProfilesUI();
                 await ServerManagerDialog.ShowAsync();
             }
@@ -297,37 +299,42 @@ namespace Zenith_MC_Server
             }
         }
 
-        private async void BtnDeleteServerProfile_Click(object sender, RoutedEventArgs e)
+        private void BtnDeleteServerProfile_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is ServerProfile profile)
             {
-                if (ServerManagerDialog != null)
+                _pendingDeleteProfile = profile;
+                if (TxtInlineDeleteConfirmText != null)
                 {
-                    ServerManagerDialog.Hide();
-                    await Task.Delay(100);
+                    TxtInlineDeleteConfirmText.Text = $"¿Estás seguro de eliminar permanentemente el servidor '{profile.Name}'?";
                 }
-
-                var confirmDialog = new ContentDialog
+                if (InlineDeleteConfirmBorder != null)
                 {
-                    Title = "Confirmar Eliminación de Servidor",
-                    Content = $"¿Estás seguro de que deseas eliminar permanentemente el servidor '{profile.Name}'?\nEsta acción borra los archivos del servidor.",
-                    PrimaryButtonText = "Sí, Eliminar",
-                    CloseButtonText = "Cancelar",
-                    DefaultButton = ContentDialogButton.Close,
-                    XamlRoot = RootGrid.XamlRoot
-                };
-
-                var result = await confirmDialog.ShowAsync();
-                if (result == ContentDialogResult.Primary)
-                {
-                    _serverManager.DeleteProfile(profile.Id);
-                    RefreshServerProfilesUI();
+                    InlineDeleteConfirmBorder.Visibility = Visibility.Visible;
                 }
+            }
+        }
 
-                if (ServerManagerDialog != null && _serverManager.GetProfiles().Count > 0)
+        private void BtnCancelInlineDelete_Click(object sender, RoutedEventArgs e)
+        {
+            _pendingDeleteProfile = null;
+            if (InlineDeleteConfirmBorder != null)
+            {
+                InlineDeleteConfirmBorder.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void BtnConfirmInlineDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (_pendingDeleteProfile != null)
+            {
+                _serverManager.DeleteProfile(_pendingDeleteProfile.Id);
+                _pendingDeleteProfile = null;
+                if (InlineDeleteConfirmBorder != null)
                 {
-                    await ServerManagerDialog.ShowAsync();
+                    InlineDeleteConfirmBorder.Visibility = Visibility.Collapsed;
                 }
+                RefreshServerProfilesUI();
             }
         }
 

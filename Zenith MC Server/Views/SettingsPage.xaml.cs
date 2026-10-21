@@ -46,11 +46,17 @@ namespace Zenith_MC_Server.Views
         {
             if (_mainWindow == null) return;
 
+            bool deleteServerFiles = ChkDeleteServerFilesOnReset.IsChecked == true;
+
+            string details = deleteServerFiles
+                ? "¿Estás seguro de resetear el launcher y eliminar permanentemente TODOS los archivos de los servidores?"
+                : "¿Estás seguro de resetear el launcher? (Los archivos físicos de los servidores NO se eliminarán)";
+
             var confirmDialog = new ContentDialog
             {
-                Title = "⚠️ Reseteo Completo del Launcher",
-                Content = "¿Estás completamente seguro de que deseas borrar TODOS los servidores, ajustes e información del launcher?\n\nEsta acción reiniciará el launcher a su estado original de fábrica.",
-                PrimaryButtonText = "Sí, Borrar Todo",
+                Title = "⚠️ Restablecimiento de Fábrica",
+                Content = details,
+                PrimaryButtonText = "Sí, Restablecer",
                 CloseButtonText = "Cancelar",
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = this.XamlRoot
@@ -61,6 +67,22 @@ namespace Zenith_MC_Server.Views
             {
                 try
                 {
+                    if (deleteServerFiles)
+                    {
+                        var profiles = _mainWindow.ServerManager.GetProfiles();
+                        foreach (var profile in profiles)
+                        {
+                            if (!string.IsNullOrWhiteSpace(profile.DirectoryPath) && Directory.Exists(profile.DirectoryPath))
+                            {
+                                try
+                                {
+                                    Directory.Delete(profile.DirectoryPath, true);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+
                     string rootDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ZenithMCServer");
                     if (Directory.Exists(rootDataDir))
                     {
@@ -69,9 +91,10 @@ namespace Zenith_MC_Server.Views
                 }
                 catch { }
 
+                _mainWindow.ServerManager.GetProfiles().Clear();
                 _mainWindow.RefreshServerProfilesUI();
                 _mainWindow.NavigateToTag("Wizard");
-                _mainWindow.AppendConsoleLog("[Zenith Factory Reset] Reseteo completo finalizado exitosamente.");
+                _mainWindow.AppendConsoleLog("[Zenith Factory Reset] Reseteo de fábrica completado exitosamente.");
             }
         }
     }

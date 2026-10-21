@@ -104,7 +104,7 @@
                 <ContentDialog x:Name="ServerManagerDialog" Title="Administración de Servidores" PrimaryButtonText="Cerrar" IsPrimaryButtonEnabled="True" CloseButtonText="">
                     <StackPanel Spacing="12" Width="420">
                         <TextBlock Text="Haz clic en un servidor para seleccionarlo como activo:" FontSize="12" Foreground="#AAAAAA"/>
-                        <ListView x:Name="LstServerProfilesDialog" Height="220" IsItemClickEnabled="True" ItemClick="LstServerProfilesDialog_ItemClick">
+                        <ListView x:Name="LstServerProfilesDialog" Height="200" IsItemClickEnabled="True" ItemClick="LstServerProfilesDialog_ItemClick">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Padding="8">
@@ -121,6 +121,17 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
+
+                        <!-- Inline Delete Confirmation Banner (Prevents COMException 0x80000019) -->
+                        <Border x:Name="InlineDeleteConfirmBorder" Background="#20EF4444" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="8" Padding="12" Visibility="Collapsed">
+                            <StackPanel Spacing="8">
+                                <TextBlock x:Name="TxtInlineDeleteConfirmText" Text="¿Estás seguro de eliminar este servidor?" FontWeight="Bold" FontSize="12" Foreground="#EF4444" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                                    <Button Content="Cancelar" Click="BtnCancelInlineDelete_Click" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                                    <Button Content="Confirmar Eliminación" Click="BtnConfirmInlineDelete_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ContentDialog>
             </Grid>

@@ -57,8 +57,11 @@
             <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#EF4444" BorderThickness="1">
                 <StackPanel Spacing="12">
                     <TextBlock Text="⚠️ Restablecimiento de Fábrica / Reseteo Completo" FontSize="16" FontWeight="SemiBold" Foreground="#EF4444"/>
-                    <TextBlock Text="Elimina permanentemente todos los servidores configurados, carpetas, ajustes e historial del launcher y reinicia a la configuración inicial." FontSize="12" Foreground="#888888" TextWrapping="Wrap"/>
-                    <Button Content="⚠️ Eliminar Todo y Resetear Launcher" Click="BtnFullFactoryReset_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="16,8" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Elimina la configuración del launcher e historial. Puedes elegir si deseas eliminar también los archivos y carpetas físicas de todos los servidores." FontSize="12" Foreground="#888888" TextWrapping="Wrap"/>
+
+                    <CheckBox x:Name="ChkDeleteServerFilesOnReset" Content="Eliminar también los archivos y carpetas físicas de todos los servidores" IsChecked="True"/>
+
+                    <Button Content="⚠️ Restablecer Launcher" Click="BtnFullFactoryReset_Click" Background="#EF4444" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="16,8" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
         </StackPanel>
