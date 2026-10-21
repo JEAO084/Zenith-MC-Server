@@ -192,11 +192,7 @@ namespace Zenith_MC_Server
 
                 if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
                 if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 240, 240, 240));
-                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
                 if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 51, 65, 85));
-
-                if (BrandLogoBorder != null) BrandLogoBorder.Background = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
-                if (BrandLogoText != null) BrandLogoText.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
             }
             else
             {
@@ -204,11 +200,7 @@ namespace Zenith_MC_Server
 
                 if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
                 if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 16, 16, 16));
-                if (TxtAppTitle != null) TxtAppTitle.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
                 if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 203, 213, 225));
-
-                if (BrandLogoBorder != null) BrandLogoBorder.Background = new SolidColorBrush(Color.FromArgb(255, 248, 250, 252));
-                if (BrandLogoText != null) BrandLogoText.Foreground = new SolidColorBrush(Color.FromArgb(255, 15, 23, 42));
             }
         }
 

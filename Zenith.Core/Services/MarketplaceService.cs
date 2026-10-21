@@ -151,7 +151,8 @@ namespace Zenith.Core.Services
                 searchUrl += $"&query={Uri.EscapeDataString(query)}";
             }
 
-            searchUrl += $"&facets=[[\"project_type:{projectType}\"]]";
+            string escapedFacets = Uri.EscapeDataString($"[[\"project_type:{projectType}\"]]");
+            searchUrl += $"&facets={escapedFacets}";
 
             var response = await _httpClient.GetAsync(searchUrl);
             if (!response.IsSuccessStatusCode) return items;

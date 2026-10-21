@@ -7,7 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Zenith MC Server - Minecraft Server Launcher">
+    Title="ZENITH MC SERVER">
 
     <Window.SystemBackdrop>
         <DesktopAcrylicBackdrop />
@@ -19,59 +19,45 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Integrated Custom Title Bar with Minimalist Icon Buttons -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#20101010" Height="48" Padding="12,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <!-- Native TitleBar Control -->
+        <TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="ZENITH MC SERVER" Subtitle="Minecraft Multi-Server Launcher" Height="48">
+            <TitleBar.IconSource>
+                <FontIconSource Glyph="&#xE700;" />
+            </TitleBar.IconSource>
+            <TitleBar.Header>
+                <Button x:Name="BtnTogglePane" Click="BtnTogglePane_Click" VerticalAlignment="Center" Margin="8,0" Padding="8,6" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Alternar Panel">
+                    <SymbolIcon Symbol="AllApps"/>
+                </Button>
+            </TitleBar.Header>
+            <TitleBar.Content>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                    <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
+                    <ComboBox x:Name="CmbServerSelector" Width="180" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
 
-            <!-- Toggle Navigation Pane Button -->
-            <Button x:Name="BtnTogglePane" Grid.Column="0" Click="BtnTogglePane_Click" VerticalAlignment="Center" Margin="0,0,8,0" Padding="8,6" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Alternar Panel">
-                <SymbolIcon Symbol="AllApps"/>
-            </Button>
+                    <!-- Minimalist Icon Button for Server Profile Manager -->
+                    <Button Click="BtnManageServers_Click" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Administrar Servidores">
+                        <SymbolIcon Symbol="Setting"/>
+                    </Button>
 
-            <!-- Brand Logo & Title -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <Border x:Name="BrandLogoBorder" Background="#F8FAFC" CornerRadius="8" Width="30" Height="30">
-                    <TextBlock x:Name="BrandLogoText" Text="Z" Foreground="#0F172A" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="TxtAppTitle" Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="13" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Minecraft Multi-Server Launcher" FontSize="10" Foreground="#888888"/>
+                    <!-- Minimalist Plus Icon Button for Creating Server -->
+                    <Button Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Crear Servidor">
+                        <SymbolIcon Symbol="Add"/>
+                    </Button>
                 </StackPanel>
-            </StackPanel>
+            </TitleBar.Content>
+            <TitleBar.Footer>
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
+                    <Border Background="#20000000" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#30FFFFFF">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
+                            <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="11" Foreground="#DDDDDD" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TitleBar.Footer>
+        </TitleBar>
 
-            <!-- Active Server Selector & Minimalist TitleBar Icons -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
-                <ComboBox x:Name="CmbServerSelector" Width="180" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
-
-                <!-- Minimalist Icon Button for Server Profile Manager -->
-                <Button Click="BtnManageServers_Click" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Administrar Servidores">
-                    <SymbolIcon Symbol="Setting"/>
-                </Button>
-
-                <!-- Minimalist Plus Icon Button for Creating Server -->
-                <Button Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Crear Servidor">
-                    <SymbolIcon Symbol="Add"/>
-                </Button>
-            </StackPanel>
-
-            <!-- Server Running Status Indicator -->
-            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
-                <Border Background="#20000000" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#30FFFFFF">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
-                        <TextBlock x:Name="StatusIndicatorText" Text="Servidor Detenido" FontSize="11" Foreground="#DDDDDD" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </Grid>
-
-        <!-- Main Navigation View (Crear Servidor Removed from List as Requested) -->
+        <!-- Main Navigation View -->
         <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="True" IsBackButtonVisible="Auto" BackRequested="NavView_BackRequested" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
