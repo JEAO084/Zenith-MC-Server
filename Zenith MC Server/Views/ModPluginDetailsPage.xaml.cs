@@ -141,7 +141,7 @@ namespace Zenith_MC_Server.Views
                 _mainWindow?.AppendConsoleLog($"[Zenith Marketplace] Fuente cambiada a '{selectedSource}' para '{_currentItem.Title}'.");
 
                 // Download from new source
-                SplitButtonSource_Click(sender, e);
+                await PerformInstallationAsync();
             }
         }
 
@@ -240,7 +240,12 @@ namespace Zenith_MC_Server.Views
             }
         }
 
-        private async void SplitButtonSource_Click(object sender, RoutedEventArgs e)
+        private async void SplitButtonSource_Click(SplitButton sender, SplitButtonClickEventArgs args)
+        {
+            await PerformInstallationAsync();
+        }
+
+        private async Task PerformInstallationAsync()
         {
             if (_currentItem != null && _mainWindow?.ActiveProfile != null && SplitButtonSource != null)
             {

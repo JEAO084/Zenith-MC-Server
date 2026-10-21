@@ -44,15 +44,15 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Source Selector & Install ToggleSplitButton -->
+                <!-- Source Selector & Install SplitButton -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <ToggleSplitButton x:Name="SplitButtonSource" Content="🚀 Instalar en Servidor" Click="SplitButtonSource_Click" FontWeight="Bold" CornerRadius="8" Padding="16,8">
-                        <ToggleSplitButton.Flyout>
+                    <SplitButton x:Name="SplitButtonSource" Content="🚀 Instalar en Servidor" Click="SplitButtonSource_Click" FontWeight="Bold" CornerRadius="8" Padding="16,8">
+                        <SplitButton.Flyout>
                             <MenuFlyout x:Name="FlyoutAvailableSources">
                                 <!-- Dynamically populated menu items for available sources -->
                             </MenuFlyout>
-                        </ToggleSplitButton.Flyout>
-                    </ToggleSplitButton>
+                        </SplitButton.Flyout>
+                    </SplitButton>
                 </StackPanel>
             </Grid>
         </Border>
