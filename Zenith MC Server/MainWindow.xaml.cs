@@ -260,6 +260,11 @@ namespace Zenith_MC_Server
             NavigateBack();
         }
 
+        private void BtnNavigateBack_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateBack();
+        }
+
         private void BtnTogglePane_Click(object sender, RoutedEventArgs e)
         {
             NavView.IsPaneOpen = !NavView.IsPaneOpen;
@@ -296,6 +301,12 @@ namespace Zenith_MC_Server
         {
             if (sender is Button btn && btn.Tag is ServerProfile profile)
             {
+                if (ServerManagerDialog != null)
+                {
+                    ServerManagerDialog.Hide();
+                    await Task.Delay(100);
+                }
+
                 var confirmDialog = new ContentDialog
                 {
                     Title = "Confirmar Eliminación de Servidor",
@@ -311,6 +322,11 @@ namespace Zenith_MC_Server
                 {
                     _serverManager.DeleteProfile(profile.Id);
                     RefreshServerProfilesUI();
+                }
+
+                if (ServerManagerDialog != null && _serverManager.GetProfiles().Count > 0)
+                {
+                    await ServerManagerDialog.ShowAsync();
                 }
             }
         }
