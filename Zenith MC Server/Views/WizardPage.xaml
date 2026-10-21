@@ -8,7 +8,10 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <StackPanel Spacing="20">
-            <TextBlock Text="Asistente de Creación de Servidor Paso a Paso" FontSize="22" FontWeight="Bold"/>
+            <Grid>
+                <TextBlock Text="Asistente de Creación e Importación de Servidores" FontSize="22" FontWeight="Bold"/>
+                <Button Content="📂 Importar Servidor Existente desde Carpeta" Click="BtnImportExistingServer_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="14,8" HorizontalAlignment="Right"/>
+            </Grid>
 
             <Grid Background="#20888888" Padding="16" CornerRadius="12" BorderBrush="#30888888" BorderThickness="1">
                 <Grid.ColumnDefinitions>

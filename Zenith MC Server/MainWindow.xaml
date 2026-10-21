@@ -19,7 +19,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Integrated Custom Title Bar with Pane Toggle Button -->
+        <!-- Integrated Custom Title Bar with Minimalist Icon Buttons -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#20101010" Height="48" Padding="12,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -29,7 +29,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Toggle Navigation Pane Button -->
-            <Button x:Name="BtnTogglePane" Grid.Column="0" Click="BtnTogglePane_Click" VerticalAlignment="Center" Margin="0,0,8,0" Padding="8,6" Background="Transparent" BorderThickness="0">
+            <Button x:Name="BtnTogglePane" Grid.Column="0" Click="BtnTogglePane_Click" VerticalAlignment="Center" Margin="0,0,8,0" Padding="8,6" Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="Alternar Panel">
                 <SymbolIcon Symbol="AllApps"/>
             </Button>
 
@@ -44,12 +44,20 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Active Server Selector & Server Profile Manager Dialog Button -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+            <!-- Active Server Selector & Minimalist TitleBar Icons -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
                 <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
-                <ComboBox x:Name="CmbServerSelector" Width="200" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
-                <Button Content="⚙️ Administrar Servidores" Click="BtnManageServers_Click" CornerRadius="6" Padding="10,4" FontSize="11"/>
-                <Button Content="+ Crear Servidor" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                <ComboBox x:Name="CmbServerSelector" Width="180" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
+
+                <!-- Minimalist Icon Button for Server Profile Manager -->
+                <Button Click="BtnManageServers_Click" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Administrar Servidores">
+                    <SymbolIcon Symbol="Setting"/>
+                </Button>
+
+                <!-- Minimalist Plus Icon Button for Creating Server -->
+                <Button Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" Padding="8,6" CornerRadius="6" VerticalAlignment="Center" ToolTipService.ToolTip="Crear Servidor">
+                    <SymbolIcon Symbol="Add"/>
+                </Button>
             </StackPanel>
 
             <!-- Server Running Status Indicator -->
@@ -63,18 +71,12 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main Navigation View with Native Settings Page & Back Requested -->
+        <!-- Main Navigation View (Crear Servidor Removed from List as Requested) -->
         <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="True" IsBackButtonVisible="Auto" BackRequested="NavView_BackRequested" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Play"/>
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-
-                <NavigationViewItem Content="Crear Servidor (Wizard)" Tag="Wizard">
-                    <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Add"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
@@ -107,19 +109,19 @@
             <Grid>
                 <Frame x:Name="ContentFrame" />
 
-                <!-- ContentDialog for Server Profile Manager / Double Confirmation Delete -->
+                <!-- ContentDialog for Server Profile Manager / 1-Click Profile Selection / Delete -->
                 <ContentDialog x:Name="ServerManagerDialog" Title="Administración de Servidores" PrimaryButtonText="Cerrar" IsPrimaryButtonEnabled="True" CloseButtonText="">
-                    <StackPanel Spacing="12" Width="400">
-                        <TextBlock Text="Servidores Configurados" FontWeight="Bold" FontSize="14"/>
-                        <ListView x:Name="LstServerProfilesDialog" Height="200">
+                    <StackPanel Spacing="12" Width="420">
+                        <TextBlock Text="Haz clic en un servidor para seleccionarlo como activo:" FontSize="12" Foreground="#AAAAAA"/>
+                        <ListView x:Name="LstServerProfilesDialog" Height="220" IsItemClickEnabled="True" ItemClick="LstServerProfilesDialog_ItemClick">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Padding="6">
+                                    <Grid Padding="8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="2">
+                                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13"/>
                                             <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#888888"/>
                                         </StackPanel>

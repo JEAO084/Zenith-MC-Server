@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Windows.UI;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
@@ -57,7 +56,15 @@ namespace Zenith_MC_Server
             this.SystemBackdrop = new DesktopAcrylicBackdrop();
             ApplyThemeMode("Oscuro");
 
-            NavigateToTag("Dashboard");
+            // First-run detection: If no server profiles exist, navigate to Wizard Page automatically
+            if (_serverManager.GetProfiles().Count == 0)
+            {
+                NavigateToTag("Wizard");
+            }
+            else
+            {
+                NavigateToTag("Dashboard");
+            }
         }
 
         #region Service Accessors & Helper Methods
@@ -276,6 +283,23 @@ namespace Zenith_MC_Server
             }
         }
 
+        private void LstServerProfilesDialog_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is ServerProfile profile)
+            {
+                _serverManager.SelectProfile(profile.Id);
+                RefreshServerProfilesUI();
+                if (ServerManagerDialog != null)
+                {
+                    ServerManagerDialog.Hide();
+                }
+                if (ContentFrame.Content is DashboardPage dashPage)
+                {
+                    dashPage.UpdateActiveServerInfo(profile.Name, $"{profile.SoftwareType} {profile.Version}", "25565");
+                }
+            }
+        }
+
         private async void BtnDeleteServerProfile_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is ServerProfile profile)
@@ -283,7 +307,7 @@ namespace Zenith_MC_Server
                 var confirmDialog = new ContentDialog
                 {
                     Title = "Confirmar Eliminación de Servidor",
-                    Content = $"¿Estás seguro de que deseas eliminar permanentemente el servidor '{profile.Name}'?\nEsta acción no se puede deshacer.",
+                    Content = $"¿Estás seguro de que deseas eliminar permanentemente el servidor '{profile.Name}'?\nEsta acción borra los archivos del servidor.",
                     PrimaryButtonText = "Sí, Eliminar",
                     CloseButtonText = "Cancelar",
                     DefaultButton = ContentDialogButton.Close,

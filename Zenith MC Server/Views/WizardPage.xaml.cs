@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Storage.Pickers;
 using Zenith.Core.Models;
 using Zenith.Core.Services;
 
@@ -75,6 +76,45 @@ namespace Zenith_MC_Server.Views
                     WzdCmbLoader.ItemsSource = loaders;
                     if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
                 }
+            }
+        }
+
+        private async void BtnImportExistingServer_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mainWindow == null) return;
+
+            try
+            {
+                var folderPicker = new FolderPicker();
+                folderPicker.SuggestedStartLocation = PickerLocationId.Desktop;
+                folderPicker.FileTypeFilter.Add("*");
+
+                IntPtr windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(_mainWindow);
+                WinRT.Interop.InitializeWithWindow.Initialize(folderPicker, windowHandle);
+
+                var folder = await folderPicker.PickSingleFolderAsync();
+                if (folder != null)
+                {
+                    string folderPath = folder.Path;
+                    string serverName = $"📂 {folder.Name}";
+
+                    var jarFiles = Directory.GetFiles(folderPath, "*.jar");
+                    string jarName = jarFiles.Length > 0 ? Path.GetFileName(jarFiles[0]) : "server.jar";
+
+                    var newProfile = _mainWindow.ServerManager.CreateProfile(serverName, "Paper", "1.20.4", 4);
+                    newProfile.DirectoryPath = folderPath;
+                    newProfile.JarFileName = jarName;
+
+                    _mainWindow.ServerManager.UpdateProfile(newProfile);
+                    _mainWindow.ServerManager.SelectProfile(newProfile.Id);
+                    _mainWindow.RefreshServerProfilesUI();
+                    _mainWindow.NavigateToTag("Dashboard");
+                    _mainWindow.AppendConsoleLog($"[Zenith Import] Servidor '{folder.Name}' importado desde {folderPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _mainWindow.AppendConsoleLog($"[Zenith Import Notice] {ex.Message}");
             }
         }
 
