@@ -8,8 +8,37 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
         <StackPanel Spacing="16">
-            <TextBlock Text="Ajustes Globales del Launcher" FontSize="22" FontWeight="Bold"/>
+            <TextBlock Text="Ajustes Globales y Personalización del Launcher" FontSize="22" FontWeight="Bold"/>
 
+            <!-- Card 1: Theme Selector (Oscuro / Claro) -->
+            <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Tema Visual de la Aplicación (WinUI Acrylic)" FontSize="16" FontWeight="SemiBold"/>
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="Tema Principal" FontSize="12"/>
+                            <ComboBox x:Name="CmbAppTheme" SelectedIndex="0" HorizontalAlignment="Stretch" SelectionChanged="CmbAppTheme_SelectionChanged">
+                                <ComboBoxItem Content="🌙 Oscuro (Acrylic Dark + Acento Blanco)"/>
+                                <ComboBoxItem Content="☀️ Claro (Acrylic Light + Acento Negro)"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="Fondo de Ventana" FontSize="12"/>
+                            <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch" IsEnabled="False">
+                                <ComboBoxItem Content="DesktopAcrylic (Nativo)"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Card 2: External Editor -->
             <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Editor de Texto Externo" FontSize="16" FontWeight="SemiBold"/>
@@ -24,6 +53,7 @@
                 </StackPanel>
             </Border>
 
+            <!-- Card 3: Behavior & Defaults -->
             <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Comportamiento y Automatización" FontSize="16" FontWeight="SemiBold"/>

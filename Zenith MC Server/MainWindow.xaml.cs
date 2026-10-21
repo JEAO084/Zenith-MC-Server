@@ -81,6 +81,10 @@ namespace Zenith_MC_Server
             {
                 CmbServerSelector.SelectedItem = _serverManager.ActiveProfile;
             }
+            if (LstServerProfilesDialog != null)
+            {
+                LstServerProfilesDialog.ItemsSource = profiles;
+            }
         }
 
         public void StartActiveServer()
@@ -177,7 +181,6 @@ namespace Zenith_MC_Server
 
             if (choice.Contains("Claro"))
             {
-                // Native Light WinUI + Translucent Acrylic + Inverted Dark Accent (#0F172A)
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Light;
 
                 if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
@@ -190,7 +193,6 @@ namespace Zenith_MC_Server
             }
             else
             {
-                // Native Dark WinUI + Translucent Acrylic + Inverted Light Accent (#F8FAFC)
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
 
                 if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
@@ -238,10 +240,6 @@ namespace Zenith_MC_Server
             {
                 javaPage.Initialize(this);
             }
-            else if (e.Content is CustomizationPage customPage)
-            {
-                customPage.Initialize(this);
-            }
             else if (e.Content is SettingsPage settingsPage)
             {
                 settingsPage.Initialize(this);
@@ -258,9 +256,47 @@ namespace Zenith_MC_Server
             }
         }
 
-        private void BtnNavigateBack_Click(object sender, RoutedEventArgs e)
+        private void NavView_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
         {
             NavigateBack();
+        }
+
+        private void BtnTogglePane_Click(object sender, RoutedEventArgs e)
+        {
+            NavView.IsPaneOpen = !NavView.IsPaneOpen;
+        }
+
+        private async void BtnManageServers_Click(object sender, RoutedEventArgs e)
+        {
+            if (ServerManagerDialog != null)
+            {
+                ServerManagerDialog.XamlRoot = RootGrid.XamlRoot;
+                RefreshServerProfilesUI();
+                await ServerManagerDialog.ShowAsync();
+            }
+        }
+
+        private async void BtnDeleteServerProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is ServerProfile profile)
+            {
+                var confirmDialog = new ContentDialog
+                {
+                    Title = "Confirmar Eliminación de Servidor",
+                    Content = $"¿Estás seguro de que deseas eliminar permanentemente el servidor '{profile.Name}'?\nEsta acción no se puede deshacer.",
+                    PrimaryButtonText = "Sí, Eliminar",
+                    CloseButtonText = "Cancelar",
+                    DefaultButton = ContentDialogButton.Close,
+                    XamlRoot = RootGrid.XamlRoot
+                };
+
+                var result = await confirmDialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    _serverManager.DeleteProfile(profile.Id);
+                    RefreshServerProfilesUI();
+                }
+            }
         }
 
         private void NavigateBack()
@@ -275,7 +311,11 @@ namespace Zenith_MC_Server
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
-            if (args.SelectedItemContainer is NavigationViewItem selectedItem)
+            if (args.IsSettingsSelected)
+            {
+                NavigateToTag("Settings");
+            }
+            else if (args.SelectedItemContainer is NavigationViewItem selectedItem)
             {
                 string tag = selectedItem.Tag?.ToString() ?? "";
                 NavigateToTag(tag);
@@ -309,9 +349,7 @@ namespace Zenith_MC_Server
                 case "JavaRuntimes":
                     ContentFrame.Navigate(typeof(JavaPage));
                     break;
-                case "Customization":
-                    ContentFrame.Navigate(typeof(CustomizationPage));
-                    break;
+                case "Settings":
                 case "LauncherSettings":
                     ContentFrame.Navigate(typeof(SettingsPage));
                     break;

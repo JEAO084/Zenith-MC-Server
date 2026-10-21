@@ -34,7 +34,7 @@ namespace Zenith_MC_Server.Views
             }
 
             var treeRoot = FileTreeNode.BuildTree(profile.DirectoryPath);
-            TreeFileExplorer.ItemsSource = new List<FileTreeNode> { treeRoot };
+            TreeFileExplorer.ItemsSource = treeRoot.Children;
         }
 
         private void BtnRefreshFiles_Click(object sender, RoutedEventArgs e)
@@ -57,8 +57,8 @@ namespace Zenith_MC_Server.Views
             }
             else
             {
-                if (TxtCodeEditor != null) TxtCodeEditor.Text = "// [Carpeta seleccionada]";
-                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta: {node.RelativePath}";
+                if (TxtCodeEditor != null) TxtCodeEditor.Text = $"// Carpeta: {node.RelativePath}";
+                if (TxtFileEditorStatus != null) TxtFileEditorStatus.Text = $"Carpeta seleccionada: {node.RelativePath}";
             }
         }
 
@@ -85,7 +85,7 @@ namespace Zenith_MC_Server.Views
 
             string newFileName = $"config_custom_{DateTime.Now:mm_ss}.txt";
             string newFilePath = Path.Combine(targetDir, newFileName);
-            _mainWindow.FileManager.CreateFile(newFilePath, "# Archivo creado desde Zenith MC Server Launcher\n");
+            _mainWindow.FileManager.CreateFile(newFilePath, "# Archivo de configuración\n");
             RefreshFileList();
         }
 

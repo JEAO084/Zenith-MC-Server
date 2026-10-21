@@ -19,35 +19,41 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Custom Integrated Title Bar -->
-        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#20101010" Height="48" Padding="16,0">
+        <!-- Integrated Custom Title Bar with Pane Toggle Button -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="#20101010" Height="48" Padding="12,0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Toggle Navigation Pane Button -->
+            <Button x:Name="BtnTogglePane" Grid.Column="0" Click="BtnTogglePane_Click" VerticalAlignment="Center" Margin="0,0,8,0" Padding="8,6" Background="Transparent" BorderThickness="0">
+                <SymbolIcon Symbol="AllApps"/>
+            </Button>
+
             <!-- Brand Logo & Title -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <Border x:Name="BrandLogoBorder" Background="#F8FAFC" CornerRadius="8" Width="32" Height="32">
-                    <TextBlock x:Name="BrandLogoText" Text="Z" Foreground="#0F172A" FontWeight="Bold" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Border x:Name="BrandLogoBorder" Background="#F8FAFC" CornerRadius="8" Width="30" Height="30">
+                    <TextBlock x:Name="BrandLogoText" Text="Z" Foreground="#0F172A" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="TxtAppTitle" Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                    <TextBlock Text="Launcher &amp; Multi-Server Manager (Acrylic Inverted Edition)" FontSize="10" Foreground="#888888"/>
+                    <TextBlock x:Name="TxtAppTitle" Text="ZENITH MC SERVER" FontWeight="Bold" FontSize="13" Foreground="#FFFFFF"/>
+                    <TextBlock Text="Minecraft Multi-Server Launcher" FontSize="10" Foreground="#888888"/>
                 </StackPanel>
             </StackPanel>
 
-            <!-- Active Server Selector & Navigation Back -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
-                <Button Content="← Atrás (Botón 4)" Click="BtnNavigateBack_Click" CornerRadius="6" Padding="8,4" FontSize="11"/>
+            <!-- Active Server Selector & Server Profile Manager Dialog Button -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <TextBlock x:Name="TxtActiveServerLabel" Text="Servidor Activo:" VerticalAlignment="Center" FontSize="12" Foreground="#CCCCCC"/>
                 <ComboBox x:Name="CmbServerSelector" Width="200" SelectionChanged="CmbServerSelector_SelectionChanged" DisplayMemberPath="Name" VerticalAlignment="Center"/>
-                <Button Content="+ Crear Servidor" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4"/>
+                <Button Content="⚙️ Administrar Servidores" Click="BtnManageServers_Click" CornerRadius="6" Padding="10,4" FontSize="11"/>
+                <Button Content="+ Crear Servidor" Click="BtnOpenWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" CornerRadius="6" Padding="10,4" FontSize="11"/>
             </StackPanel>
 
             <!-- Server Running Status Indicator -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,120,0">
                 <Border Background="#20000000" Padding="8,4" CornerRadius="6" BorderThickness="1" BorderBrush="#30FFFFFF">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Ellipse Width="8" Height="8" x:Name="StatusIndicatorDot" Fill="#FF4444"/>
@@ -57,8 +63,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main Navigation View with Central ContentFrame Page Navigation -->
-        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="False" SelectionChanged="NavView_SelectionChanged">
+        <!-- Main Navigation View with Native Settings Page & Back Requested -->
+        <NavigationView Grid.Row="1" x:Name="NavView" PaneDisplayMode="Left" IsSettingsVisible="True" IsBackButtonVisible="Auto" BackRequested="NavView_BackRequested" SelectionChanged="NavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Consola y Control" Tag="Dashboard">
                     <NavigationViewItem.Icon>
@@ -95,22 +101,36 @@
                         <SymbolIcon Symbol="Library"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-
-                <NavigationViewItem Content="Personalización de Interfaz" Tag="Customization">
-                    <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Edit"/>
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-
-                <NavigationViewItem Content="Ajustes Globales" Tag="LauncherSettings">
-                    <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Admin"/>
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <!-- Modular Frame View Container -->
-            <Frame x:Name="ContentFrame" />
+            <!-- Server Profile Manager Flyout Overlay -->
+            <Grid>
+                <Frame x:Name="ContentFrame" />
+
+                <!-- ContentDialog for Server Profile Manager / Double Confirmation Delete -->
+                <ContentDialog x:Name="ServerManagerDialog" Title="Administración de Servidores" PrimaryButtonText="Cerrar" IsPrimaryButtonEnabled="True" CloseButtonText="">
+                    <StackPanel Spacing="12" Width="400">
+                        <TextBlock Text="Servidores Configurados" FontWeight="Bold" FontSize="14"/>
+                        <ListView x:Name="LstServerProfilesDialog" Height="200">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13"/>
+                                            <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#888888"/>
+                                        </StackPanel>
+                                        <Button Content="Eliminar" Tag="{Binding}" Click="BtnDeleteServerProfile_Click" Background="#EF4444" Foreground="White" CornerRadius="6" Grid.Column="1" VerticalAlignment="Center" Padding="8,4" FontSize="11"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </ContentDialog>
+            </Grid>
         </NavigationView>
     </Grid>
 </Window>

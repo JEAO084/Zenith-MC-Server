@@ -21,6 +21,15 @@ namespace Zenith_MC_Server.Views
             }
         }
 
+        private void CmbAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbAppTheme?.SelectedItem is ComboBoxItem item && _mainWindow != null)
+            {
+                string choice = item.Content.ToString() ?? "";
+                _mainWindow.ApplyThemeMode(choice);
+            }
+        }
+
         private void BtnSaveExternalEditor_Click(object sender, RoutedEventArgs e)
         {
             if (_mainWindow?.ActiveProfile != null && TxtExternalEditorExecutablePath != null)
