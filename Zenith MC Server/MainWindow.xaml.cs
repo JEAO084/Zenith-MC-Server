@@ -1,3 +1,5 @@
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -43,7 +45,13 @@ namespace Zenith_MC_Server
             this.InitializeComponent();
 
             this.ExtendsContentIntoTitleBar = true;
-            this.SetTitleBar(AppTitleBar);
+            this.SetTitleBar(TitleBar);
+            AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+            if (AppWindow.TitleBar.ExtendsContentIntoTitleBar)
+            {
+                AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            }
+
 
             ContentFrame.Navigated += ContentFrame_Navigated;
 
@@ -192,16 +200,15 @@ namespace Zenith_MC_Server
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Light;
 
                 if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
-                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 240, 240, 240));
-                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 51, 65, 85));
+                if (AppWindow.TitleBar != null) AppWindow.TitleBar.ButtonForegroundColor = ColorHelper.FromArgb(255, 0, 0, 0);
+
             }
             else
             {
                 if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
 
-                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0));
-                if (AppTitleBar != null) AppTitleBar.Background = new SolidColorBrush(Color.FromArgb(40, 16, 16, 16));
-                if (TxtActiveServerLabel != null) TxtActiveServerLabel.Foreground = new SolidColorBrush(Color.FromArgb(255, 203, 213, 225));
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+                if (AppWindow.TitleBar != null) AppWindow.TitleBar.ButtonForegroundColor = ColorHelper.FromArgb(255, 255, 255, 255);
             }
         }
 
@@ -254,21 +261,6 @@ namespace Zenith_MC_Server
                 NavigateBack();
                 e.Handled = true;
             }
-        }
-
-        private void NavView_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
-        {
-            NavigateBack();
-        }
-
-        private void BtnNavigateBack_Click(object sender, RoutedEventArgs e)
-        {
-            NavigateBack();
-        }
-
-        private void BtnTogglePane_Click(object sender, RoutedEventArgs e)
-        {
-            NavView.IsPaneOpen = !NavView.IsPaneOpen;
         }
 
         private async void BtnManageServers_Click(object sender, RoutedEventArgs e)
@@ -375,6 +367,7 @@ namespace Zenith_MC_Server
                     break;
                 case "Wizard":
                     ContentFrame.Navigate(typeof(WizardPage));
+                    NavView.SelectedItem = null;
                     break;
                 case "Config":
                     ContentFrame.Navigate(typeof(ServerConfigPage));
@@ -427,5 +420,15 @@ namespace Zenith_MC_Server
         }
 
         #endregion
+
+        private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
+        {
+            NavView.IsPaneOpen = !NavView.IsPaneOpen;
+        }
+
+        private void TitleBar_BackRequested(TitleBar sender, object args)
+        {
+            NavigateBack();
+        }
     }
 }

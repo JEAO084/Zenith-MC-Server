@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Zenith MC Server (Package)": {
-      "commandName": "MsixPackage"
+      "commandName": "MsixPackage",
+      "hotReloadEnabled": true
     },
     "Zenith MC Server (Unpackaged)": {
       "commandName": "Project"

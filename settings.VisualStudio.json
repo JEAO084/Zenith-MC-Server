@@ -1,0 +1,5 @@
+/* Visual Studio Settings File */
+{
+  "debugging.hotReload.applyOnFileSave": true,
+  "debugging.hotReload.hotReloadVerbosityLevel": "minimal"
+}

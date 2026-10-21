@@ -62,10 +62,10 @@
                 </Grid>
             </StackPanel>
 
-            <GridView Grid.Row="1" x:Name="GrdMarketplaceItems" IsItemClickEnabled="True" ItemClick="GrdMarketplaceItems_ItemClick">
+            <GridView Grid.Row="1" x:Name="GrdMarketplaceItems" IsItemClickEnabled="True" ItemClick="GrdMarketplaceItems_ItemClick" CornerRadius="6">
                 <GridView.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="270" Height="160" Background="#20888888" CornerRadius="12" Padding="14" Margin="6" BorderBrush="#30888888" BorderThickness="1">
+                        <Border Width="270" Height="160" Background="#20888888" CornerRadius="6" Padding="14" BorderBrush="#30888888" BorderThickness="1">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -85,8 +85,8 @@
                                         </Image.Source>
                                     </Image>
                                     <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="Bold" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                    <Border Grid.Column="2" Background="#20000000" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding SourceName}" FontSize="9"/>
+                                    <Border Grid.Column="2" Background="#20000000" CornerRadius="4" Padding="10,4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SourceName}" FontSize="10"/>
                                     </Border>
                                 </Grid>
 
@@ -94,7 +94,7 @@
 
                                 <Grid Grid.Row="2" Margin="0,6,0,0">
                                     <TextBlock Text="{Binding FormattedDownloads}" FontSize="10" VerticalAlignment="Center"/>
-                                    <Button Content="Ver Detalles" Tag="{Binding}" Click="BtnOpenDetails_Click" Background="#22C55E" Foreground="White" CornerRadius="6" HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
+                                    <Button Content="Ver Detalles" Tag="{Binding}" Click="BtnOpenDetails_Click" Background="Gray" Foreground="White" CornerRadius="6" HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
                                 </Grid>
                             </Grid>
                         </Border>
@@ -155,7 +155,7 @@
                 <TabViewItem Header="Imágenes / Galería" IsClosable="False">
                     <Grid Padding="16">
                         <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <FontIcon Glyph="&#xEB9F;" FontSize="36"/>
+                            <FontIcon Glyph="&#xEB9F;"/>
                             <TextBlock Text="Vista previa e imágenes del proyecto proporcionadas por la API." FontSize="12" Foreground="#888888"/>
                         </StackPanel>
                     </Grid>
