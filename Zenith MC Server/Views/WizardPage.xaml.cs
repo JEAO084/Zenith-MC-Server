@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ namespace Zenith_MC_Server.Views
     public sealed partial class WizardPage : Page
     {
         private MainWindow? _mainWindow;
-        private List<MinecraftVersionInfo> _wizardMojangVersions = new();
+        private List<MinecraftVersionInfo> _wizardMojangVersions = [];
 
         public WizardPage()
         {
@@ -46,12 +47,12 @@ namespace Zenith_MC_Server.Views
             });
         }
 
-        private async void WzdChkSnapshots_CheckedChanged(object sender, RoutedEventArgs e)
+        private async void WzdChkSnapshots_CheckedChanged(object _sender, RoutedEventArgs _e)
         {
             await LoadWizardVersionsAsync();
         }
 
-        private void WzdCmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void WzdCmbVersion_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
         {
             if (_mainWindow == null || WzdCmbVersion == null) return;
             if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
@@ -59,15 +60,17 @@ namespace Zenith_MC_Server.Views
                 var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
                 int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(ver.Id);
 
-                if (WzdTxtJavaRequirement != null)
+                var wzdTxtJavaRequirement = FindName("WzdTxtJavaRequirement") as TextBlock;
+                if (wzdTxtJavaRequirement != null)
                 {
-                    WzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
+                    wzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
                 }
 
                 var installedJava = _mainWindow.JavaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava && File.Exists(j.InstalledPath));
-                if (WzdTxtJavaStatus != null)
+                var wzdTxtJavaStatus = FindName("WzdTxtJavaStatus") as TextBlock;
+                if (wzdTxtJavaStatus != null)
                 {
-                    WzdTxtJavaStatus.Text = installedJava != null ? $"Estado: Java {reqJava} detectado e instalado localmente." : $"Estado: Java {reqJava} no detectado. Se descargará automáticamente.";
+                    wzdTxtJavaStatus.Text = installedJava != null ? $"Estado: Java {reqJava} detectado e instalado localmente." : $"Estado: Java {reqJava} no detectado. Se descargará automáticamente.";
                 }
 
                 var loaders = _mainWindow.DownloadService.GetCompatibleLoadersForVersion(ver.Id);
@@ -79,14 +82,16 @@ namespace Zenith_MC_Server.Views
             }
         }
 
-        private async void BtnImportExistingServer_Click(object sender, RoutedEventArgs e)
+        private async void BtnImportExistingServer_Click(object _sender, RoutedEventArgs _e)
         {
             if (_mainWindow == null) return;
 
             try
             {
-                var folderPicker = new FolderPicker();
-                folderPicker.SuggestedStartLocation = PickerLocationId.Desktop;
+                var folderPicker = new FolderPicker
+                {
+                    SuggestedStartLocation = PickerLocationId.Desktop
+                };
                 folderPicker.FileTypeFilter.Add("*");
 
                 IntPtr windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(_mainWindow);
@@ -118,7 +123,7 @@ namespace Zenith_MC_Server.Views
             }
         }
 
-        private async void BtnFinishWizard_Click(object sender, RoutedEventArgs e)
+        private async void BtnFinishWizard_Click(object _sender, RoutedEventArgs _e)
         {
             if (_mainWindow == null || BtnFinishWizard == null || WzdProgressBar == null) return;
 
@@ -157,13 +162,13 @@ namespace Zenith_MC_Server.Views
                 int ramGb = 4;
                 if (WzdCmbRam?.SelectedItem is ComboBoxItem ramItem)
                 {
-                    int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
+                    _ = int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
                 }
 
                 int port = 25565;
                 if (WzdTxtPort != null)
                 {
-                    int.TryParse(WzdTxtPort.Text.Trim(), out port);
+                    _ = int.TryParse(WzdTxtPort.Text.Trim(), out port);
                 }
 
                 string displayName = $"{icon} {name}";
@@ -215,7 +220,18 @@ namespace Zenith_MC_Server.Views
                     _mainWindow.AppendConsoleLog($"[Zenith Download Warning] {ex.Message}");
                 }
 
-                if (WzdToggleAikarsFlags != null && WzdToggleAikarsFlags.IsOn)
+                var toggleAikars = FindName("WzdToggleAikarsFlags") as FrameworkElement ?? WzdToggleAikarsFlags;
+                bool isAikarsOn = false;
+                if (toggleAikars is ToggleSwitch ts)
+                {
+                    isAikarsOn = ts.IsOn;
+                }
+                else if (toggleAikars is ToggleButton tb)
+                {
+                    isAikarsOn = tb.IsChecked == true;
+                }
+
+                if (isAikarsOn)
                 {
                     newProfile.CustomJvmArgs = _mainWindow.ConfigService.GetAikarsJvmFlags(ramGb);
                 }
