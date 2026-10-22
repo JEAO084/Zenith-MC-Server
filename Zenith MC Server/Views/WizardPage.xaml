@@ -56,26 +56,36 @@
                     <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
                         <StackPanel Spacing="12">
                             <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold"/>
-                            <ComboBox x:Name="WzdCmbLoader" HorizontalAlignment="Stretch" SelectedIndex="0">
-                                <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
-                                <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
-                                <ComboBoxItem Content="Spigot MC (Clásico Bukkit/Spigot)"/>
-                                <ComboBoxItem Content="Vanilla (Servidor Oficial Mojang)"/>
-                                <ComboBoxItem Content="Fabric (Mods livianos)"/>
-                            </ComboBox>
-                            <ComboBox x:Name="WzdCmbLoaderVersion" HorizontalAlignment="Stretch" SelectedIndex="0" IsEnabled="False">
-                                lista de versiones del loades seleccionado
-                            </ComboBox>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Seleccionar Motor / Software" FontSize="12"/>
+                                <ComboBox x:Name="WzdCmbLoader" SelectionChanged="WzdCmbLoader_SelectionChanged" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                    <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
+                                    <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
+                                    <ComboBoxItem Content="Spigot MC (Clásico Bukkit/Spigot)"/>
+                                    <ComboBoxItem Content="Vanilla (Servidor Oficial Mojang)"/>
+                                    <ComboBoxItem Content="Fabric (Mods livianos)"/>
+                                    <ComboBoxItem Content="Forge (Mods avanzados)"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Versión / Build Específico del Loader" FontSize="12"/>
+                                <ComboBox x:Name="WzdCmbLoaderVersion" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                </ComboBox>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </PivotItem>
                 <PivotItem Header="Java">
                     <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="Parte 3: Version de Java" FontSize="16" FontWeight="SemiBold"/>
-                            <ComboBox HorizontalAlignment="Stretch" SelectedIndex="0" ToolTipService.ToolTip="Version de Java para esta Version += (java-Correspondiente)">
-                                Lista de version de java y por defecto sera seleccionada a la version correspondiente a la version del juego y lo requerido
-                            </ComboBox>
+                            <TextBlock Text="Parte 3: Versión y Entorno de Java JDK" FontSize="16" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="WzdTxtJavaRequirement" Text="Requisito Estricto: Java 21 (Para Minecraft 1.20.4)" FontSize="13" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="WzdTxtJavaStatus" Text="Estado: Verificando Java interno..." FontSize="12" Foreground="#888888"/>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Seleccionar Distribución / Versión de Java" FontSize="12"/>
+                                <ComboBox x:Name="WzdCmbJavaVersion" SelectionChanged="WzdCmbJavaVersion_SelectionChanged" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Versión de Java para el servidor">
+                                </ComboBox>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </PivotItem>

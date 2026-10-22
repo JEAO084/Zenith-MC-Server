@@ -16,6 +16,7 @@ namespace Zenith_MC_Server.Views
     {
         private MainWindow? _mainWindow;
         private List<MinecraftVersionInfo> _wizardMojangVersions = [];
+        private List<JavaVersionOption> _availableJavaOptions = [];
 
         public WizardPage()
         {
@@ -25,17 +26,24 @@ namespace Zenith_MC_Server.Views
         public void Initialize(MainWindow window)
         {
             _mainWindow = window;
-            _ = LoadWizardVersionsAsync();
+            _ = LoadWizardDataAsync();
         }
 
-        private async Task LoadWizardVersionsAsync()
+        private async Task LoadWizardDataAsync()
         {
             if (_mainWindow == null) return;
-            bool showSnapshots = WzdChkSnapshots.IsChecked == true;
+            bool showSnapshots = WzdChkSnapshots?.IsChecked == true;
             _wizardMojangVersions = await _mainWindow.DownloadService.GetMojangVersionsAsync(showSnapshots);
+
+            _availableJavaOptions = _mainWindow.JavaService.GetAvailableJavaVersions();
 
             DispatcherQueue.TryEnqueue(() =>
             {
+                if (WzdCmbJavaVersion != null)
+                {
+                    WzdCmbJavaVersion.ItemsSource = _availableJavaOptions.Select(j => $"{j.Name} {(j.IsInstalled ? "[Instalado]" : "[Descargar]")}").ToList();
+                }
+
                 if (WzdCmbVersion != null)
                 {
                     WzdCmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
@@ -49,10 +57,10 @@ namespace Zenith_MC_Server.Views
 
         private async void WzdChkSnapshots_CheckedChanged(object _sender, RoutedEventArgs _e)
         {
-            await LoadWizardVersionsAsync();
+            await LoadWizardDataAsync();
         }
 
-        private void WzdCmbVersion_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
+        private async void WzdCmbVersion_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
         {
             if (_mainWindow == null || WzdCmbVersion == null) return;
             if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
@@ -60,17 +68,31 @@ namespace Zenith_MC_Server.Views
                 var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
                 int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(ver.Id);
 
-                var wzdTxtJavaRequirement = FindName("WzdTxtJavaRequirement") as TextBlock;
+                var wzdTxtJavaRequirement = FindName("WzdTxtJavaRequirement") as TextBlock ?? WzdTxtJavaRequirement;
                 if (wzdTxtJavaRequirement != null)
                 {
                     wzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
                 }
 
                 var installedJava = _mainWindow.JavaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava && File.Exists(j.InstalledPath));
-                var wzdTxtJavaStatus = FindName("WzdTxtJavaStatus") as TextBlock;
+                var wzdTxtJavaStatus = FindName("WzdTxtJavaStatus") as TextBlock ?? WzdTxtJavaStatus;
                 if (wzdTxtJavaStatus != null)
                 {
                     wzdTxtJavaStatus.Text = installedJava != null ? $"Estado: Java {reqJava} detectado e instalado localmente." : $"Estado: Java {reqJava} no detectado. Se descargará automáticamente.";
+                }
+
+                // Auto-select corresponding Java version in ComboBox
+                if (WzdCmbJavaVersion != null && _availableJavaOptions.Count > 0)
+                {
+                    int matchIdx = _availableJavaOptions.FindIndex(j => j.MajorVersion == reqJava);
+                    if (matchIdx >= 0)
+                    {
+                        WzdCmbJavaVersion.SelectedIndex = matchIdx;
+                    }
+                    else
+                    {
+                        WzdCmbJavaVersion.SelectedIndex = 0;
+                    }
                 }
 
                 var loaders = _mainWindow.DownloadService.GetCompatibleLoadersForVersion(ver.Id);
@@ -79,7 +101,59 @@ namespace Zenith_MC_Server.Views
                     WzdCmbLoader.ItemsSource = loaders;
                     if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
                 }
+
+                await UpdateLoaderVersionsAsync();
             }
+        }
+
+        private async void WzdCmbLoader_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
+        {
+            await UpdateLoaderVersionsAsync();
+        }
+
+        private void WzdCmbJavaVersion_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
+        {
+            if (WzdCmbJavaVersion == null || WzdCmbJavaVersion.SelectedIndex < 0 || WzdCmbJavaVersion.SelectedIndex >= _availableJavaOptions.Count) return;
+
+            var selectedJava = _availableJavaOptions[WzdCmbJavaVersion.SelectedIndex];
+            var wzdTxtJavaStatus = FindName("WzdTxtJavaStatus") as TextBlock ?? WzdTxtJavaStatus;
+            if (wzdTxtJavaStatus != null)
+            {
+                wzdTxtJavaStatus.Text = selectedJava.IsInstalled ? $"Estado: {selectedJava.Name} instalado." : $"Estado: {selectedJava.Name} no instalado. Se descargará automáticamente.";
+            }
+        }
+
+        private async Task UpdateLoaderVersionsAsync()
+        {
+            if (_mainWindow == null || WzdCmbVersion == null || WzdCmbLoader == null || WzdCmbLoaderVersion == null) return;
+
+            string selectedMcVer = "1.20.4";
+            if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
+            {
+                selectedMcVer = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
+            }
+
+            string selectedLoader = "Paper";
+            if (WzdCmbLoader.SelectedItem != null)
+            {
+                if (WzdCmbLoader.SelectedItem is ComboBoxItem item)
+                    selectedLoader = item.Content?.ToString()?.Split(' ')[0] ?? "Paper";
+                else
+                    selectedLoader = WzdCmbLoader.SelectedItem.ToString()?.Split(' ')[0] ?? "Paper";
+            }
+
+            var loaderVersions = await _mainWindow.DownloadService.GetLoaderVersionsAsync(selectedLoader, selectedMcVer);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (WzdCmbLoaderVersion != null)
+                {
+                    WzdCmbLoaderVersion.ItemsSource = loaderVersions;
+                    if (loaderVersions.Count > 0)
+                    {
+                        WzdCmbLoaderVersion.SelectedIndex = 0;
+                    }
+                }
+            });
         }
 
         private async void BtnImportExistingServer_Click(object _sender, RoutedEventArgs _e)
@@ -152,11 +226,16 @@ namespace Zenith_MC_Server.Views
                 string loader = "Paper";
                 if (WzdCmbLoader?.SelectedItem != null)
                 {
-                    loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
+                    if (WzdCmbLoader.SelectedItem is ComboBoxItem loaderItem)
+                        loader = loaderItem.Content?.ToString()?.Split(' ')[0] ?? "Paper";
+                    else
+                        loader = WzdCmbLoader.SelectedItem.ToString()?.Split(' ')[0] ?? "Paper";
                 }
-                else if (WzdCmbLoader?.Items.Count > 0)
+
+                string loaderVer = "Latest";
+                if (WzdCmbLoaderVersion?.SelectedItem != null)
                 {
-                    loader = WzdCmbLoader.Items[0].ToString() ?? "Paper";
+                    loaderVer = WzdCmbLoaderVersion.SelectedItem.ToString() ?? "Latest";
                 }
 
                 int ramGb = 4;
@@ -175,15 +254,24 @@ namespace Zenith_MC_Server.Views
                 var newProfile = _mainWindow.ServerManager.CreateProfile(displayName, loader, version, ramGb);
                 newProfile.SoftwareType = loader;
 
-                // 1. Ensure internal Java JDK runtime
-                int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(version);
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Verificando / Descargando Java {reqJava} interno...";
+                // 1. Ensure Java JDK runtime from user selection or recommended default
+                JavaVersionOption? targetOption = null;
+                if (WzdCmbJavaVersion != null && WzdCmbJavaVersion.SelectedIndex >= 0 && WzdCmbJavaVersion.SelectedIndex < _availableJavaOptions.Count)
+                {
+                    targetOption = _availableJavaOptions[WzdCmbJavaVersion.SelectedIndex];
+                }
 
-                var javaOptions = _mainWindow.JavaService.GetAvailableJavaVersions();
-                var targetOption = javaOptions.FirstOrDefault(j => j.MajorVersion == reqJava) ?? javaOptions.FirstOrDefault();
+                if (targetOption == null)
+                {
+                    int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(version);
+                    targetOption = _availableJavaOptions.FirstOrDefault(j => j.MajorVersion == reqJava) ?? _availableJavaOptions.FirstOrDefault();
+                }
 
                 if (targetOption != null)
                 {
+                    var wzdTxtProgressStatus = FindName("WzdTxtProgressStatus") as TextBlock ?? WzdTxtProgressStatus;
+                    if (wzdTxtProgressStatus != null) wzdTxtProgressStatus.Text = $"Verificando / Descargando {targetOption.Name}...";
+
                     if (!File.Exists(targetOption.InstalledPath))
                     {
                         try
@@ -205,14 +293,15 @@ namespace Zenith_MC_Server.Views
                     }
                 }
 
-                // 2. Download server jar file for selected loader
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Descargando motor {loader} {version}...";
+                // 2. Download server jar file for selected loader and loader version
+                var progressStatus = FindName("WzdTxtProgressStatus") as TextBlock ?? WzdTxtProgressStatus;
+                if (progressStatus != null) progressStatus.Text = $"Descargando motor {loader} ({loaderVer}) para Minecraft {version}...";
                 try
                 {
                     string downloadedJarPath = await _mainWindow.DownloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
                     {
                         DispatcherQueue.TryEnqueue(() => { if (WzdProgressBar != null) WzdProgressBar.Value = 40 + (p * 0.6); });
-                    });
+                    }, loaderVer);
                     newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
                 }
                 catch (Exception ex)

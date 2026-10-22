@@ -67,8 +67,103 @@ namespace Zenith.Core.Services
             {
                 loaders.Add("Fabric");
             }
+            loaders.Add("Forge");
 
             return loaders;
+        }
+
+        public async Task<List<string>> GetLoaderVersionsAsync(string loader, string mcVersion)
+        {
+            var versions = new List<string>();
+            if (string.IsNullOrWhiteSpace(loader) || string.IsNullOrWhiteSpace(mcVersion))
+            {
+                return new List<string> { "Latest / Recommended" };
+            }
+
+            string cleanLoader = loader.Trim().ToLowerInvariant();
+
+            if (cleanLoader.Contains("paper"))
+            {
+                try
+                {
+                    string buildsJson = await _httpClient.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{mcVersion}");
+                    using var doc = JsonDocument.Parse(buildsJson);
+                    if (doc.RootElement.TryGetProperty("builds", out var buildsArr) && buildsArr.GetArrayLength() > 0)
+                    {
+                        var builds = buildsArr.EnumerateArray().Select(b => b.GetInt32()).Reverse().Take(10).ToList();
+                        foreach (var b in builds)
+                        {
+                            versions.Add($"Build {b}");
+                        }
+                        if (versions.Count > 0)
+                        {
+                            versions[0] += " (Latest)";
+                        }
+                    }
+                }
+                catch { }
+            }
+            else if (cleanLoader.Contains("purpur"))
+            {
+                try
+                {
+                    string purpurJson = await _httpClient.GetStringAsync($"https://api.purpurmc.org/v2/purpur/{mcVersion}");
+                    using var doc = JsonDocument.Parse(purpurJson);
+                    if (doc.RootElement.TryGetProperty("builds", out var buildsObj) && buildsObj.TryGetProperty("all", out var buildsArr) && buildsArr.GetArrayLength() > 0)
+                    {
+                        var builds = buildsArr.EnumerateArray().Select(b => b.GetString() ?? "").Where(b => !string.IsNullOrEmpty(b)).Reverse().Take(10).ToList();
+                        foreach (var b in builds)
+                        {
+                            versions.Add($"Build {b}");
+                        }
+                        if (versions.Count > 0)
+                        {
+                            versions[0] += " (Latest)";
+                        }
+                    }
+                }
+                catch { }
+            }
+            else if (cleanLoader.Contains("fabric"))
+            {
+                try
+                {
+                    string fabricJson = await _httpClient.GetStringAsync("https://meta.fabricmc.net/v2/versions/loader");
+                    using var doc = JsonDocument.Parse(fabricJson);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var item in doc.RootElement.EnumerateArray().Take(8))
+                        {
+                            if (item.TryGetProperty("version", out var vProp))
+                            {
+                                string ver = vProp.GetString() ?? "";
+                                if (!string.IsNullOrEmpty(ver))
+                                {
+                                    versions.Add($"Fabric Loader {ver}");
+                                }
+                            }
+                        }
+                        if (versions.Count > 0)
+                        {
+                            versions[0] += " (Recommended)";
+                        }
+                    }
+                }
+                catch { }
+            }
+            else if (cleanLoader.Contains("forge"))
+            {
+                versions.Add("Forge Recommended Build");
+                versions.Add("Forge Latest Build");
+                versions.Add($"{mcVersion} - Standard");
+            }
+
+            if (versions.Count == 0)
+            {
+                versions.Add("Latest / Recommended");
+            }
+
+            return versions;
         }
 
         public async Task<List<MinecraftVersionInfo>> GetMojangVersionsAsync(bool includeSnapshots = false)
@@ -143,7 +238,7 @@ namespace Zenith.Core.Services
             return null;
         }
 
-        public async Task<string> DownloadServerJarForVersionAsync(string softwareType, string version, string destinationFolder, Action<double>? progressCallback = null)
+        public async Task<string> DownloadServerJarForVersionAsync(string softwareType, string version, string destinationFolder, Action<double>? progressCallback = null, string? loaderVersion = null)
         {
             string cleanType = softwareType.Trim();
 
@@ -152,7 +247,17 @@ namespace Zenith.Core.Services
             {
                 if (cleanType.Contains("Paper", StringComparison.OrdinalIgnoreCase))
                 {
-                    string? paperUrl = await GetPaperJarUrlAsync(version);
+                    string? buildNum = null;
+                    if (!string.IsNullOrEmpty(loaderVersion) && loaderVersion.Contains("Build"))
+                    {
+                        var parts = loaderVersion.Split(' ');
+                        foreach (var p in parts)
+                        {
+                            if (int.TryParse(p, out _)) { buildNum = p; break; }
+                        }
+                    }
+
+                    string? paperUrl = await GetPaperJarUrlAsync(version, buildNum);
                     if (!string.IsNullOrEmpty(paperUrl))
                     {
                         return await DownloadFileFromUrlAsync(paperUrl, destinationFolder, "server.jar", progressCallback);
@@ -160,8 +265,36 @@ namespace Zenith.Core.Services
                 }
                 else if (cleanType.Contains("Purpur", StringComparison.OrdinalIgnoreCase))
                 {
-                    string purpurUrl = $"https://api.purpurmc.org/v2/purpur/{version}/latest/download";
+                    string build = "latest";
+                    if (!string.IsNullOrEmpty(loaderVersion) && loaderVersion.Contains("Build"))
+                    {
+                        var parts = loaderVersion.Split(' ');
+                        foreach (var p in parts)
+                        {
+                            if (int.TryParse(p, out _)) { build = p; break; }
+                        }
+                    }
+                    string purpurUrl = $"https://api.purpurmc.org/v2/purpur/{version}/{build}/download";
                     return await DownloadFileFromUrlAsync(purpurUrl, destinationFolder, "server.jar", progressCallback);
+                }
+                else if (cleanType.Contains("Fabric", StringComparison.OrdinalIgnoreCase))
+                {
+                    string fabricLoader = "0.15.7";
+                    if (!string.IsNullOrEmpty(loaderVersion))
+                    {
+                        var parts = loaderVersion.Split(' ');
+                        foreach (var p in parts)
+                        {
+                            if (p.Contains('.')) { fabricLoader = p; break; }
+                        }
+                    }
+                    string fabricUrl = $"https://meta.fabricmc.net/v2/versions/loader/{version}/{fabricLoader}/1.0.1/server/jar";
+                    return await DownloadFileFromUrlAsync(fabricUrl, destinationFolder, "server.jar", progressCallback);
+                }
+                else if (cleanType.Contains("Forge", StringComparison.OrdinalIgnoreCase))
+                {
+                    string forgeUrl = $"https://maven.minecraftforge.net/net/minecraftforge/forge/{version}-latest/forge-{version}-latest-installer.jar";
+                    return await DownloadFileFromUrlAsync(forgeUrl, destinationFolder, "server.jar", progressCallback);
                 }
                 else if (cleanType.Contains("Spigot", StringComparison.OrdinalIgnoreCase))
                 {
@@ -187,10 +320,15 @@ namespace Zenith.Core.Services
             return await DownloadFileFromUrlAsync(fallbackUrl, destinationFolder, "server.jar", progressCallback);
         }
 
-        private async Task<string?> GetPaperJarUrlAsync(string version)
+        private async Task<string?> GetPaperJarUrlAsync(string version, string? buildNumber = null)
         {
             try
             {
+                if (!string.IsNullOrEmpty(buildNumber) && int.TryParse(buildNumber, out int specifiedBuild))
+                {
+                    return $"https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{specifiedBuild}/downloads/paper-{version}-{specifiedBuild}.jar";
+                }
+
                 string buildsJson = await _httpClient.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{version}");
                 using var doc = JsonDocument.Parse(buildsJson);
                 if (doc.RootElement.TryGetProperty("builds", out var buildsArr) && buildsArr.GetArrayLength() > 0)
