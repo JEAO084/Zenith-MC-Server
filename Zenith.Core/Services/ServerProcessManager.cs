@@ -11,8 +11,42 @@ namespace Zenith.Core.Services
         private Process? _process;
         public bool IsRunning => _process != null && !_process.HasExited;
 
+        private readonly HashSet<string> _dynamicServerCommands = new(StringComparer.OrdinalIgnoreCase);
+        private readonly object _lockObj = new();
+
         public event Action<string>? OutputReceived;
         public event Action<int>? ProcessExited;
+
+        public void RegisterDynamicCommand(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command)) return;
+            string clean = command.Trim().TrimStart('/');
+            if (clean.Length > 0)
+            {
+                lock (_lockObj)
+                {
+                    _dynamicServerCommands.Add(clean);
+                }
+            }
+        }
+
+        public List<string> GetDynamicSuggestions(string query)
+        {
+            lock (_lockObj)
+            {
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    return _dynamicServerCommands.Take(10).ToList();
+                }
+
+                string q = query.Trim().TrimStart('/').ToLowerInvariant();
+                return _dynamicServerCommands
+                    .Where(c => c.ToLowerInvariant().StartsWith(q) || c.ToLowerInvariant().Contains(q))
+                    .OrderBy(c => c.Length)
+                    .Take(10)
+                    .ToList();
+            }
+        }
 
         public bool StartServer(string javaExecutablePath, string serverDirectory, string jarFileName, int ramGb = 4, string customJvmArgs = "")
         {
@@ -80,16 +114,43 @@ namespace Zenith.Core.Services
         {
             if (line.Contains("UnsupportedClassVersionError", StringComparison.OrdinalIgnoreCase))
             {
-                OutputReceived?.Invoke("[SUGERENCIA ZENITH] Tu servidor requiere una versión de Java superior a la configurada. Por favor actualiza a Java 21 o Java 25 en Ajustes.");
+                OutputReceived?.Invoke("[SUGERENCIA ZENITH] Tu servidor requiere una versión de Java superior a la configurada. Por favor actualiza la versión de Java en Ajustes.");
             }
             else if (line.Contains("Access to the path", StringComparison.OrdinalIgnoreCase) && line.Contains("denied", StringComparison.OrdinalIgnoreCase))
             {
                 OutputReceived?.Invoke("[SUGERENCIA ZENITH] Permiso denegado al acceder a Java. Cambia la ruta de ejecuciones de Java en la pestaña de Ajustes a una carpeta fuera de AppX.");
             }
+
+            // Extract dynamic commands from server logs (e.g. Registered command: /help, or Command [/op], etc.)
+            ExtractDynamicCommandsFromLog(line);
+        }
+
+        private void ExtractDynamicCommandsFromLog(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return;
+
+            // Detect commands mentioned in log output (e.g., "/help", "/stop", "/gamemode", "/op", etc.)
+            var words = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var word in words)
+            {
+                if (word.StartsWith("/") && word.Length > 1)
+                {
+                    string cmdCandidate = word.TrimStart('/').TrimEnd('.', ':', ',', '!', '?', ')', '(');
+                    if (cmdCandidate.Length > 0 && !cmdCandidate.Contains('/'))
+                    {
+                        RegisterDynamicCommand(cmdCandidate);
+                    }
+                }
+            }
         }
 
         public void SendCommand(string command)
         {
+            if (!string.IsNullOrWhiteSpace(command))
+            {
+                RegisterDynamicCommand(command);
+            }
+
             if (IsRunning && _process != null && !_process.HasExited)
             {
                 _process.StandardInput.WriteLine(command);

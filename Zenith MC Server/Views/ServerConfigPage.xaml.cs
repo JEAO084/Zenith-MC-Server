@@ -21,6 +21,34 @@ namespace Zenith_MC_Server.Views
             LoadConfigurationToUI();
         }
 
+        private void ConfigSelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+        {
+            if (PanelHardware == null || PanelProperties == null || PanelPaper == null || PanelSpigot == null) return;
+
+            PanelHardware.Visibility = Visibility.Collapsed;
+            PanelProperties.Visibility = Visibility.Collapsed;
+            PanelPaper.Visibility = Visibility.Collapsed;
+            PanelSpigot.Visibility = Visibility.Collapsed;
+
+            var selected = sender.SelectedItem;
+            if (selected == TabHardware)
+            {
+                PanelHardware.Visibility = Visibility.Visible;
+            }
+            else if (selected == TabProperties)
+            {
+                PanelProperties.Visibility = Visibility.Visible;
+            }
+            else if (selected == TabPaper)
+            {
+                PanelPaper.Visibility = Visibility.Visible;
+            }
+            else if (selected == TabSpigot)
+            {
+                PanelSpigot.Visibility = Visibility.Visible;
+            }
+        }
+
         public void LoadConfigurationToUI()
         {
             if (_mainWindow == null || _mainWindow.ActiveProfile == null) return;

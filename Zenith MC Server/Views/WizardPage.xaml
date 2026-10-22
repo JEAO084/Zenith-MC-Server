@@ -10,7 +10,7 @@
         <StackPanel Spacing="20">
             <Grid>
                 <TextBlock Text="Asistente de Creación e Importación de Servidores" FontSize="22" FontWeight="Bold"/>
-                <Button Content="📂 Importar Servidor Existente desde Carpeta" Click="BtnImportExistingServer_Click" Background="#7C3AED" Foreground="White" FontWeight="Bold" CornerRadius="8" Padding="14,8" HorizontalAlignment="Right"/>
+                <Button Content="📂 Importar Servidor Existente desde Carpeta" Click="BtnImportExistingServer_Click" FontWeight="Bold" CornerRadius="8" Padding="14,8" HorizontalAlignment="Right"/>
             </Grid>
 
             <Grid Background="#20888888" Padding="16" CornerRadius="12" BorderBrush="#30888888" BorderThickness="1">
@@ -149,7 +149,7 @@
                         <StackPanel Spacing="6" HorizontalAlignment="Right" Margin="0,12,0,0">
                             <ProgressBar x:Name="WzdProgressBar" Value="0" Maximum="100" Height="8" Visibility="Collapsed"/>
                             <TextBlock x:Name="WzdTxtProgressStatus" Text="" FontSize="11" HorizontalAlignment="Right"/>
-                            <Button x:Name="BtnFinishWizard" Content="🚀 Finalizar y Crear Servidor" Click="BtnFinishWizard_Click" Background="#22C55E" Foreground="White" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" HorizontalAlignment="Right"/>
+                            <Button x:Name="BtnFinishWizard" Content="🚀 Finalizar y Crear Servidor" Click="BtnFinishWizard_Click" FontWeight="Bold" FontSize="15" CornerRadius="8" Padding="20,10" HorizontalAlignment="Right"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

@@ -1,10 +1,22 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Zenith.Core.Models;
 
 namespace Zenith_MC_Server.Views
 {
+    public class JavaDisplayViewModel
+    {
+        public JavaVersionOption Option { get; set; } = new();
+        public string Name => Option.Name;
+        public string Description => Option.Description;
+        public bool IsInstalled => Option.IsInstalled;
+        public string InstalledStatusText => Option.IsInstalled ? "✓ Instalado" : "No Instalado";
+    }
+
     public sealed partial class SettingsPage : Page
     {
         private MainWindow? _mainWindow;
@@ -21,15 +33,117 @@ namespace Zenith_MC_Server.Views
             {
                 TxtExternalEditorExecutablePath.Text = _mainWindow.ActiveProfile.ExternalEditorPath;
             }
+
+            PopulateJavaVersionsList();
         }
 
-        private void CmbAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void SettingsSelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
         {
-            if (CmbAppTheme?.SelectedItem is ComboBoxItem item && _mainWindow != null)
+            if (PanelSettingsGeneral == null || PanelSettingsJava == null || PanelSettingsAdvanced == null) return;
+
+            PanelSettingsGeneral.Visibility = Visibility.Collapsed;
+            PanelSettingsJava.Visibility = Visibility.Collapsed;
+            PanelSettingsAdvanced.Visibility = Visibility.Collapsed;
+
+            var selected = sender.SelectedItem;
+            if (selected == TabSettingsGeneral)
             {
-                string choice = item.Content.ToString() ?? "";
-                _mainWindow.ApplyThemeMode(choice);
+                PanelSettingsGeneral.Visibility = Visibility.Visible;
             }
+            else if (selected == TabSettingsJava)
+            {
+                PanelSettingsJava.Visibility = Visibility.Visible;
+            }
+            else if (selected == TabSettingsAdvanced)
+            {
+                PanelSettingsAdvanced.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void TglAppTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (_mainWindow == null || TglAppTheme == null) return;
+
+            bool isDark = TglAppTheme.IsChecked == true;
+            if (isDark)
+            {
+                TglAppTheme.Content = "🌙 Modo Oscuro";
+                _mainWindow.ApplyThemeMode("Oscuro");
+            }
+            else
+            {
+                TglAppTheme.Content = "☀️ Modo Claro";
+                _mainWindow.ApplyThemeMode("Claro");
+            }
+        }
+
+        private void PopulateJavaVersionsList()
+        {
+            if (_mainWindow == null || LstJavaVersions == null) return;
+
+            var rawVersions = _mainWindow.JavaService.GetAvailableJavaVersions();
+            var list = rawVersions.Select(v => new JavaDisplayViewModel { Option = v }).ToList();
+            LstJavaVersions.ItemsSource = list;
+        }
+
+        private async void BtnInstallJava_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is JavaDisplayViewModel vm && _mainWindow != null)
+            {
+                btn.IsEnabled = false;
+                btn.Content = "⏳ Descargando JDK...";
+
+                try
+                {
+                    string path = await _mainWindow.JavaService.DownloadAndExtractJavaAsync(vm.Option);
+                    _mainWindow.AppendConsoleLog($"[Zenith Java] Instalado {vm.Name} en: {path}");
+                    if (_mainWindow.ActiveProfile != null)
+                    {
+                        _mainWindow.ActiveProfile.JavaExecutablePath = path;
+                        _mainWindow.ServerManager.UpdateProfile(_mainWindow.ActiveProfile);
+                    }
+                    PopulateJavaVersionsList();
+                }
+                catch (Exception ex)
+                {
+                    _mainWindow.AppendConsoleLog($"[Zenith Java Error] {ex.Message}");
+                    btn.Content = "Error";
+                }
+            }
+        }
+
+        private void BtnAssignJavaToActiveServer_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is JavaDisplayViewModel vm && _mainWindow?.ActiveProfile != null)
+            {
+                if (File.Exists(vm.Option.InstalledPath))
+                {
+                    _mainWindow.ActiveProfile.JavaExecutablePath = vm.Option.InstalledPath;
+                    _mainWindow.ServerManager.UpdateProfile(_mainWindow.ActiveProfile);
+                    _mainWindow.AppendConsoleLog($"[Zenith Java] Asignado {vm.Name} al servidor activo.");
+                }
+                else
+                {
+                    _mainWindow.AppendConsoleLog($"[Zenith Java] Primero debes descargar e instalar {vm.Name}.");
+                }
+            }
+        }
+
+        private void CmbDefaultRam_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_mainWindow?.ActiveProfile != null && CmbDefaultRam?.SelectedItem is ComboBoxItem item)
+            {
+                if (int.TryParse(item.Content.ToString()?.Replace("GB", "").Trim(), out int ram))
+                {
+                    _mainWindow.ActiveProfile.AllocatedRamGb = ram;
+                    _mainWindow.ServerManager.UpdateProfile(_mainWindow.ActiveProfile);
+                }
+            }
+        }
+
+        private void ToggleAutoStart_Toggled(object sender, RoutedEventArgs e)
+        {
+            _mainWindow?.AppendConsoleLog($"[Zenith Settings] Iniciar servidor automáticamente: {(ToggleAutoStart.IsOn ? "Activado" : "Desactivado")}");
         }
 
         private void BtnSaveExternalEditor_Click(object sender, RoutedEventArgs e)

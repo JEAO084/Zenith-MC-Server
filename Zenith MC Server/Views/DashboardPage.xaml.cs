@@ -9,12 +9,7 @@ namespace Zenith_MC_Server.Views
     public sealed partial class DashboardPage : Page
     {
         private MainWindow? _mainWindow;
-        private readonly List<string> _knownMinecraftCommands = new()
-        {
-            "gamemode survival", "gamemode creative", "gamemode adventure", "gamemode spectator",
-            "gamerule doDaylightCycle false", "gamerule doMobSpawning false", "gamerule keepInventory true",
-            "op", "deop", "teleport", "tp", "give", "kick", "ban", "pardon", "stop", "reload", "save-all", "whitelist add", "whitelist remove", "list", "say"
-        };
+        private bool _isServerRunning = false;
 
         public DashboardPage()
         {
@@ -26,14 +21,16 @@ namespace Zenith_MC_Server.Views
             _mainWindow = window;
         }
 
-        private void BtnStartServer_Click(object sender, RoutedEventArgs e)
+        private void BtnToggleServer_Click(object sender, RoutedEventArgs e)
         {
-            _mainWindow?.StartActiveServer();
-        }
-
-        private void BtnStopServer_Click(object sender, RoutedEventArgs e)
-        {
-            _mainWindow?.StopActiveServer();
+            if (_isServerRunning)
+            {
+                _mainWindow?.StopActiveServer();
+            }
+            else
+            {
+                _mainWindow?.StartActiveServer();
+            }
         }
 
         private void BtnSendCommand_Click(object sender, RoutedEventArgs e)
@@ -41,58 +38,41 @@ namespace Zenith_MC_Server.Views
             SendConsoleInput();
         }
 
-        private void TxtConsoleInput_TextChanged(object sender, TextChangedEventArgs e)
+        private void CmdAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
-            string query = TxtConsoleInput.Text.Trim().ToLowerInvariant();
-            if (string.IsNullOrWhiteSpace(query))
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput && _mainWindow != null)
             {
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            var matches = _knownMinecraftCommands.Where(c => c.StartsWith(query, System.StringComparison.OrdinalIgnoreCase)).ToList();
-            if (matches.Count > 0)
-            {
-                LstCmdSuggestions.ItemsSource = matches;
-                CmdSuggestionContainer.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                string query = sender.Text;
+                var suggestions = _mainWindow.ProcessManager.GetDynamicSuggestions(query);
+                sender.ItemsSource = suggestions;
             }
         }
 
-        private void LstCmdSuggestions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void CmdAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
-            if (LstCmdSuggestions.SelectedItem is string selectedCmd)
+            if (args.SelectedItem is string chosen)
             {
-                TxtConsoleInput.Text = selectedCmd;
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                sender.Text = chosen;
             }
         }
 
-        private void TxtConsoleInput_KeyDown(object sender, KeyRoutedEventArgs e)
+        private void CmdAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            string cmd = !string.IsNullOrWhiteSpace(args.QueryText) ? args.QueryText : sender.Text;
+            if (!string.IsNullOrWhiteSpace(cmd))
             {
-                SendConsoleInput();
-            }
-            else if (e.Key == Windows.System.VirtualKey.Tab && LstCmdSuggestions.Items.Count > 0)
-            {
-                TxtConsoleInput.Text = LstCmdSuggestions.Items[0].ToString() ?? "";
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
-                e.Handled = true;
+                _mainWindow?.SendServerCommand(cmd.Trim());
+                sender.Text = string.Empty;
             }
         }
 
         private void SendConsoleInput()
         {
-            string cmd = TxtConsoleInput.Text.Trim();
+            string cmd = CmdAutoSuggestBox.Text.Trim();
             if (!string.IsNullOrEmpty(cmd))
             {
                 _mainWindow?.SendServerCommand(cmd);
-                TxtConsoleInput.Text = string.Empty;
-                CmdSuggestionContainer.Visibility = Visibility.Collapsed;
+                CmdAutoSuggestBox.Text = string.Empty;
             }
         }
 
@@ -104,8 +84,11 @@ namespace Zenith_MC_Server.Views
 
         public void UpdateStatusIndicator(bool isRunning)
         {
-            BtnStartServer.IsEnabled = !isRunning;
-            BtnStopServer.IsEnabled = isRunning;
+            _isServerRunning = isRunning;
+            if (BtnToggleServer != null)
+            {
+                BtnToggleServer.Content = isRunning ? "⏹ Detener Servidor" : "▶ Iniciar Servidor";
+            }
         }
 
         public void UpdateActiveServerInfo(string name, string software, string port)
