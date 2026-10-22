@@ -30,17 +30,19 @@ namespace Zenith_MC_Server.Views
         private async Task LoadWizardVersionsAsync()
         {
             if (_mainWindow == null) return;
-            bool showSnapshots = WzdChkSnapshots.IsChecked == true;
+            var chkSnapshots = FindName("WzdChkSnapshots") as CheckBox;
+            bool showSnapshots = chkSnapshots?.IsChecked == true;
             _wizardMojangVersions = await _mainWindow.DownloadService.GetMojangVersionsAsync(showSnapshots);
 
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (WzdCmbVersion != null)
+                var cmbVersion = FindName("WzdCmbVersion") as ComboBox;
+                if (cmbVersion != null)
                 {
-                    WzdCmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
-                    if (WzdCmbVersion.Items.Count > 0)
+                    cmbVersion.ItemsSource = _wizardMojangVersions.Select(v => $"{v.Id} [{v.Type.ToUpper()}]").ToList();
+                    if (cmbVersion.Items.Count > 0)
                     {
-                        WzdCmbVersion.SelectedIndex = 0;
+                        cmbVersion.SelectedIndex = 0;
                     }
                 }
             });
@@ -53,28 +55,34 @@ namespace Zenith_MC_Server.Views
 
         private void WzdCmbVersion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_mainWindow == null || WzdCmbVersion == null) return;
-            if (WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
+            if (_mainWindow == null) return;
+            var cmbVersion = FindName("WzdCmbVersion") as ComboBox;
+            if (cmbVersion == null) return;
+
+            if (cmbVersion.SelectedIndex >= 0 && cmbVersion.SelectedIndex < _wizardMojangVersions.Count)
             {
-                var ver = _wizardMojangVersions[WzdCmbVersion.SelectedIndex];
+                var ver = _wizardMojangVersions[cmbVersion.SelectedIndex];
                 int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(ver.Id);
 
-                if (WzdTxtJavaRequirement != null)
+                var txtJavaReq = FindName("WzdTxtJavaRequirement") as TextBlock;
+                if (txtJavaReq != null)
                 {
-                    WzdTxtJavaRequirement.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
+                    txtJavaReq.Text = $"Requisito Estricto: Java {reqJava} (Para Minecraft {ver.Id})";
                 }
 
                 var installedJava = _mainWindow.JavaService.GetAvailableJavaVersions().FirstOrDefault(j => j.MajorVersion == reqJava && File.Exists(j.InstalledPath));
-                if (WzdTxtJavaStatus != null)
+                var txtJavaStatus = FindName("WzdTxtJavaStatus") as TextBlock;
+                if (txtJavaStatus != null)
                 {
-                    WzdTxtJavaStatus.Text = installedJava != null ? $"Estado: Java {reqJava} detectado e instalado localmente." : $"Estado: Java {reqJava} no detectado. Se descargará automáticamente.";
+                    txtJavaStatus.Text = installedJava != null ? $"Estado: Java {reqJava} detectado e instalado localmente." : $"Estado: Java {reqJava} no detectado. Se descargará automáticamente.";
                 }
 
                 var loaders = _mainWindow.DownloadService.GetCompatibleLoadersForVersion(ver.Id);
-                if (WzdCmbLoader != null)
+                var cmbLoader = FindName("WzdCmbLoader") as ComboBox;
+                if (cmbLoader != null)
                 {
-                    WzdCmbLoader.ItemsSource = loaders;
-                    if (loaders.Count > 0) WzdCmbLoader.SelectedIndex = 0;
+                    cmbLoader.ItemsSource = loaders;
+                    if (loaders.Count > 0) cmbLoader.SelectedIndex = 0;
                 }
             }
         }
@@ -120,50 +128,66 @@ namespace Zenith_MC_Server.Views
 
         private async void BtnFinishWizard_Click(object sender, RoutedEventArgs e)
         {
-            if (_mainWindow == null || BtnFinishWizard == null || WzdProgressBar == null) return;
+            if (_mainWindow == null) return;
 
-            BtnFinishWizard.IsEnabled = false;
-            BtnFinishWizard.Content = "⏳ Creando Servidor...";
-            BtnFinishWizard.Visibility = Visibility.Collapsed;
-            WzdProgressBar.Visibility = Visibility.Visible;
+            var btnFinish = FindName("BtnFinishWizard") as Button;
+            var progressBar = FindName("WzdProgressBar") as ProgressBar;
+            var txtProgressStatus = FindName("WzdTxtProgressStatus") as TextBlock;
+
+            if (btnFinish != null)
+            {
+                btnFinish.IsEnabled = false;
+                btnFinish.Content = "⏳ Creando Servidor...";
+                btnFinish.Visibility = Visibility.Collapsed;
+            }
+            if (progressBar != null)
+            {
+                progressBar.Visibility = Visibility.Visible;
+            }
 
             try
             {
-                string name = WzdServerName?.Text.Trim() ?? "Nuevo Servidor";
+                var txtName = FindName("WzdServerName") as TextBox;
+                string name = txtName?.Text.Trim() ?? "Nuevo Servidor";
                 if (string.IsNullOrWhiteSpace(name)) name = "Nuevo Servidor";
 
                 string icon = "⛏️";
-                if (WzdServerIcon?.SelectedItem is ComboBoxItem iconItem)
+                var cmbIcon = FindName("WzdServerIcon") as ComboBox;
+                if (cmbIcon?.SelectedItem is ComboBoxItem iconItem)
                 {
                     icon = iconItem.Content.ToString()?.Split(' ')[0] ?? "⛏️";
                 }
 
                 string version = "1.20.4";
-                if (WzdCmbVersion != null && WzdCmbVersion.SelectedIndex >= 0 && WzdCmbVersion.SelectedIndex < _wizardMojangVersions.Count)
+                var cmbVersion = FindName("WzdCmbVersion") as ComboBox;
+                if (cmbVersion != null && cmbVersion.SelectedIndex >= 0 && cmbVersion.SelectedIndex < _wizardMojangVersions.Count)
                 {
-                    version = _wizardMojangVersions[WzdCmbVersion.SelectedIndex].Id;
+                    version = _wizardMojangVersions[cmbVersion.SelectedIndex].Id;
                 }
 
                 string loader = "Paper";
-                if (WzdCmbLoader?.SelectedItem != null)
+                var cmbLoader = FindName("WzdCmbLoader") as ComboBox;
+                if (cmbLoader?.SelectedItem != null)
                 {
-                    loader = WzdCmbLoader.SelectedItem.ToString() ?? "Paper";
+                    loader = cmbLoader.SelectedItem.ToString() ?? "Paper";
                 }
-                else if (WzdCmbLoader?.Items.Count > 0)
+                else if (cmbLoader?.Items.Count > 0)
                 {
-                    loader = WzdCmbLoader.Items[0].ToString() ?? "Paper";
+                    loader = cmbLoader.Items[0].ToString() ?? "Paper";
                 }
 
                 int ramGb = 4;
-                if (WzdCmbRam?.SelectedItem is ComboBoxItem ramItem)
+                var cmbRam = FindName("WzdCmbRam") as ComboBox;
+                if (cmbRam?.SelectedItem is ComboBoxItem ramItem)
                 {
                     int.TryParse(ramItem.Content.ToString()?.Replace("GB", "").Trim(), out ramGb);
                 }
 
                 int port = 25565;
-                if (WzdTxtPort != null)
+                var txtPort = FindName("WzdTxtPort") as TextBox;
+                if (txtPort != null)
                 {
-                    int.TryParse(WzdTxtPort.Text.Trim(), out port);
+                    int.TryParse(txtPort.Text.Trim(), out port);
                 }
 
                 string displayName = $"{icon} {name}";
@@ -172,7 +196,7 @@ namespace Zenith_MC_Server.Views
 
                 // 1. Ensure internal Java JDK runtime
                 int reqJava = _mainWindow.DownloadService.GetRecommendedJavaVersion(version);
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Verificando / Descargando Java {reqJava} interno...";
+                if (txtProgressStatus != null) txtProgressStatus.Text = $"Verificando / Descargando Java {reqJava} interno...";
 
                 var javaOptions = _mainWindow.JavaService.GetAvailableJavaVersions();
                 var targetOption = javaOptions.FirstOrDefault(j => j.MajorVersion == reqJava) ?? javaOptions.FirstOrDefault();
@@ -185,7 +209,7 @@ namespace Zenith_MC_Server.Views
                         {
                             string installedExe = await _mainWindow.JavaService.DownloadAndExtractJavaAsync(targetOption, p =>
                             {
-                                DispatcherQueue.TryEnqueue(() => { if (WzdProgressBar != null) WzdProgressBar.Value = p * 0.4; });
+                                DispatcherQueue.TryEnqueue(() => { if (progressBar != null) progressBar.Value = p * 0.4; });
                             });
                             newProfile.JavaExecutablePath = installedExe;
                         }
@@ -201,12 +225,12 @@ namespace Zenith_MC_Server.Views
                 }
 
                 // 2. Download server jar file for selected loader
-                if (WzdTxtProgressStatus != null) WzdTxtProgressStatus.Text = $"Descargando motor {loader} {version}...";
+                if (txtProgressStatus != null) txtProgressStatus.Text = $"Descargando motor {loader} {version}...";
                 try
                 {
                     string downloadedJarPath = await _mainWindow.DownloadService.DownloadServerJarForVersionAsync(loader, version, newProfile.DirectoryPath, p =>
                     {
-                        DispatcherQueue.TryEnqueue(() => { if (WzdProgressBar != null) WzdProgressBar.Value = 40 + (p * 0.6); });
+                        DispatcherQueue.TryEnqueue(() => { if (progressBar != null) progressBar.Value = 40 + (p * 0.6); });
                     });
                     newProfile.JarFileName = Path.GetFileName(downloadedJarPath);
                 }
@@ -215,7 +239,11 @@ namespace Zenith_MC_Server.Views
                     _mainWindow.AppendConsoleLog($"[Zenith Download Warning] {ex.Message}");
                 }
 
-                if (WzdToggleAikarsFlags != null && WzdToggleAikarsFlags.IsOn)
+                var toggleAikars = FindName("WzdToggleAikarsFlags");
+                bool aikarsOn = (toggleAikars as ToggleSwitch)?.IsOn == true ||
+                                (toggleAikars as Microsoft.UI.Xaml.Controls.Primitives.ToggleButton)?.IsChecked == true;
+
+                if (aikarsOn)
                 {
                     newProfile.CustomJvmArgs = _mainWindow.ConfigService.GetAikarsJvmFlags(ramGb);
                 }
@@ -227,9 +255,16 @@ namespace Zenith_MC_Server.Views
             }
             finally
             {
-                BtnFinishWizard.IsEnabled = true;
-                BtnFinishWizard.Content = "🚀 Finalizar y Crear Servidor";
-                WzdProgressBar.Visibility = Visibility.Collapsed;
+                if (btnFinish != null)
+                {
+                    btnFinish.IsEnabled = true;
+                    btnFinish.Content = "🚀 Finalizar y Crear Servidor";
+                    btnFinish.Visibility = Visibility.Visible;
+                }
+                if (progressBar != null)
+                {
+                    progressBar.Visibility = Visibility.Collapsed;
+                }
             }
         }
     }
