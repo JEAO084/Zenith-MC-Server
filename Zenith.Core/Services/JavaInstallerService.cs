@@ -47,43 +47,61 @@ namespace Zenith.Core.Services
                     Name = "OpenJDK 25 (Latest / Experimental)",
                     Architecture = "x64",
                     DownloadUrl = "https://download.java.net/java/GA/jdk25/12/GPL/openjdk-25_windows-x64_bin.zip",
-                    Description = "Recomendado para versiones experimentales de Minecraft que requieren class file 69.0.",
+                    Description = "OpenJDK oficial de Java.net. Recomendado para versiones experimentales de Minecraft que requieren class file 69.0.",
                     InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-25"))
                 },
                 new JavaVersionOption
                 {
                     MajorVersion = 22,
-                    Name = "Eclipse Temurin JDK 22",
+                    Name = "Eclipse Temurin JDK 22 (Adoptium)",
                     Architecture = "x64",
                     DownloadUrl = "https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.1%2B8/OpenJDK22U-jdk_x64_windows_hotspot_22.0.1_8.zip",
-                    Description = "Recomendado para versiones recientes y snapshots de Minecraft 1.21+.",
+                    Description = "Eclipse Temurin de Adoptium. Recomendado para versiones recientes y snapshots de Minecraft 1.21+.",
                     InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-22"))
                 },
                 new JavaVersionOption
                 {
                     MajorVersion = 21,
-                    Name = "Eclipse Temurin JDK 21 (LTS)",
+                    Name = "Eclipse Temurin JDK 21 (LTS - Adoptium)",
                     Architecture = "x64",
                     DownloadUrl = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.2%2B13/OpenJDK21U-jdk_x64_windows_hotspot_21.0.2_13.zip",
-                    Description = "Recomendado para Minecraft 1.20.5+ y 1.21.",
+                    Description = "Eclipse Temurin LTS. Recomendado para Minecraft 1.20.5+ y 1.21.",
                     InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-21"))
                 },
                 new JavaVersionOption
                 {
+                    MajorVersion = 21,
+                    Name = "Amazon Corretto JDK 21 (LTS)",
+                    Architecture = "x64",
+                    DownloadUrl = "https://corretto.aws/downloads/latest/amazon-corretto-21-x64-windows-jdk.zip",
+                    Description = "Amazon Corretto 21. Distribución de OpenJDK optimizada por Amazon Web Services.",
+                    InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-corretto-21"))
+                },
+                new JavaVersionOption
+                {
+                    MajorVersion = 21,
+                    Name = "Microsoft Build of OpenJDK 21 (LTS)",
+                    Architecture = "x64",
+                    DownloadUrl = "https://aka.ms/download-jdk/microsoft-jdk-21.0.2-windows-x64.zip",
+                    Description = "Microsoft Build de OpenJDK 21. Construcción enterprise optimizada de Microsoft.",
+                    InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-ms-21"))
+                },
+                new JavaVersionOption
+                {
                     MajorVersion = 17,
-                    Name = "Eclipse Temurin JDK 17 (LTS)",
+                    Name = "Eclipse Temurin JDK 17 (LTS - Adoptium)",
                     Architecture = "x64",
                     DownloadUrl = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.10_7.zip",
-                    Description = "Recomendado para Minecraft 1.17 hasta 1.20.4.",
+                    Description = "Eclipse Temurin LTS. Recomendado para Minecraft 1.17 hasta 1.20.4.",
                     InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-17"))
                 },
                 new JavaVersionOption
                 {
                     MajorVersion = 8,
-                    Name = "Eclipse Temurin JDK 8 (LTS)",
+                    Name = "Eclipse Temurin JDK 8 (LTS - Adoptium)",
                     Architecture = "x64",
                     DownloadUrl = "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u402-b06/OpenJDK8U-jdk_x64_windows_hotspot_8u402b06.zip",
-                    Description = "Recomendado para Minecraft 1.12.2 y versiones legadas.",
+                    Description = "Eclipse Temurin LTS. Recomendado para Minecraft 1.12.2 y versiones legadas.",
                     InstalledPath = FindJavaExecutable(Path.Combine(_runtimesDir, "jdk-8"))
                 }
             };
@@ -147,8 +165,12 @@ namespace Zenith.Core.Services
         {
             return await Task.Run(async () =>
             {
-                string targetFolder = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}");
-                string zipFile = Path.Combine(_runtimesDir, $"jdk-{option.MajorVersion}.zip");
+                string folderName = $"jdk-{option.MajorVersion}";
+                if (option.Name.Contains("Corretto", StringComparison.OrdinalIgnoreCase)) folderName = "jdk-corretto-21";
+                else if (option.Name.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)) folderName = "jdk-ms-21";
+
+                string targetFolder = Path.Combine(_runtimesDir, folderName);
+                string zipFile = Path.Combine(_runtimesDir, $"{folderName}.zip");
 
                 string existingExe = FindJavaExecutable(targetFolder);
                 if (File.Exists(existingExe))

@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using DevWinUI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -15,6 +16,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using DevWinUI;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -27,6 +29,8 @@ namespace Zenith_MC_Server
     public partial class App : Application
     {
         private Window? _window;
+        public IThemeService ThemeService { get; set; }
+
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -34,7 +38,8 @@ namespace Zenith_MC_Server
         /// </summary>
         public App()
         {
-            InitializeComponent();
+            InitializeComponent(); 
+
         }
 
         /// <summary>
@@ -43,8 +48,13 @@ namespace Zenith_MC_Server
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+
             _window = new MainWindow();
             _window.Activate();
+            ThemeService = new ThemeService();
+            ThemeService.Initialize(_window);
+            ThemeService.ConfigureBackdrop(BackdropType.AcrylicThin);
+
         }
     }
 }

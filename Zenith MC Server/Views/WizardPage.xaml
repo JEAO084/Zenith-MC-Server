@@ -4,122 +4,110 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dev="using:DevWinUI"
     mc:Ignorable="d">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" CornerRadius="12" Margin="10">
         <StackPanel Spacing="10" Orientation="Vertical" VerticalAlignment="Stretch">
+            <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Parte 1: Nombre, Logo e Identidad" FontSize="16" FontWeight="SemiBold"/>
 
-            <Pivot Title="Asistente de Creación e Importación de Servidores" FontSize="20">
-                <PivotItem Header="Basico">
-                    <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Parte 1: Nombre, Logo e Identidad" FontSize="16" FontWeight="SemiBold"/>
+                    <Grid ColumnSpacing="16" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                            <Grid ColumnSpacing="16" RowSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="200"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Nombre del Servidor" FontSize="12"/>
+                            <TextBox x:Name="WzdServerName" Text="Mi Servidor Survival"/>
+                        </StackPanel>
 
-                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="Nombre del Servidor" FontSize="12"/>
-                                    <TextBox x:Name="WzdServerName" Text="Mi Servidor Survival"/>
-                                </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Logo / Icono" FontSize="12"/>
+                            <ComboBox x:Name="WzdServerIcon" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                <ComboBoxItem Content="⛏️ Minecraft Clásico"/>
+                                <ComboBoxItem Content="🗡️ Survival / PvP"/>
+                                <ComboBoxItem Content="🛡️ Hardcore"/>
+                                <ComboBoxItem Content="🏰 Ciudades"/>
+                                <ComboBoxItem Content="🌌 Skyblock"/>
+                            </ComboBox>
+                        </StackPanel>
 
-                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
-                                    <TextBlock Text="Logo / Icono" FontSize="12"/>
-                                    <ComboBox x:Name="WzdServerIcon" HorizontalAlignment="Stretch" SelectedIndex="0">
-                                        <ComboBoxItem Content="⛏️ Minecraft Clásico"/>
-                                        <ComboBoxItem Content="🗡️ Survival / PvP"/>
-                                        <ComboBoxItem Content="🛡️ Hardcore"/>
-                                        <ComboBoxItem Content="🏰 Ciudades"/>
-                                        <ComboBoxItem Content="🌌 Skyblock"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                                    <Grid>
-                                        <TextBlock Text="Seleccionar Versión de Minecraft" FontSize="12" VerticalAlignment="Center"/>
-                                        <CheckBox x:Name="WzdChkSnapshots" Content="Mostrar Snapshots y Previews" Checked="WzdChkSnapshots_CheckedChanged" Unchecked="WzdChkSnapshots_CheckedChanged" HorizontalAlignment="Right"/>
-                                    </Grid>
-                                    <ComboBox x:Name="WzdCmbVersion" SelectionChanged="WzdCmbVersion_SelectionChanged" HorizontalAlignment="Stretch"/>
-                                </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                            <Grid>
+                                <TextBlock Text="Seleccionar Versión de Minecraft" FontSize="12" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="WzdChkSnapshots" Content="Mostrar Snapshots y Previews" Checked="WzdChkSnapshots_CheckedChanged" Unchecked="WzdChkSnapshots_CheckedChanged" HorizontalAlignment="Right"/>
                             </Grid>
+                            <ComboBox x:Name="WzdCmbVersion" SelectionChanged="WzdCmbVersion_SelectionChanged" HorizontalAlignment="Stretch"/>
                         </StackPanel>
-                    </Border>
-                </PivotItem>
-                <PivotItem Header="Loader">
-                    <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold"/>
-                            <ComboBox x:Name="WzdCmbLoader" HorizontalAlignment="Stretch" SelectedIndex="0">
-                                <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
-                                <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
-                                <ComboBoxItem Content="Spigot MC (Clásico Bukkit/Spigot)"/>
-                                <ComboBoxItem Content="Vanilla (Servidor Oficial Mojang)"/>
-                                <ComboBoxItem Content="Fabric (Mods livianos)"/>
-                            </ComboBox>
-                            <ComboBox x:Name="WzdCmbLoaderVersion" HorizontalAlignment="Stretch" SelectedIndex="0" IsEnabled="False">
-                                lista de versiones del loades seleccionado
-                            </ComboBox>
-                        </StackPanel>
-                    </Border>
-                </PivotItem>
-                <PivotItem Header="Java">
-                    <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Parte 3: Version de Java" FontSize="16" FontWeight="SemiBold"/>
-                            <ComboBox HorizontalAlignment="Stretch" SelectedIndex="0" ToolTipService.ToolTip="Version de Java para esta Version += (java-Correspondiente)">
-                                Lista de version de java y por defecto sera seleccionada a la version correspondiente a la version del juego y lo requerido
-                            </ComboBox>
-                        </StackPanel>
-                    </Border>
-                </PivotItem>
-                <PivotItem Header="Parametros">
-                    <Border Background="#20888888" CornerRadius="12" Padding="18" BorderBrush="#30888888" BorderThickness="1" Margin="0,5,0,0">
-                        <StackPanel Spacing="12">
-                            <StackPanel>
+                    </Grid>
+                    <TextBlock Text="Parte 2: Loader / Motor de Servidor Compatible" FontSize="16" FontWeight="SemiBold"/>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Seleccionar Motor / Software" FontSize="12"/>
+                        <ComboBox x:Name="WzdCmbLoader" SelectionChanged="WzdCmbLoader_SelectionChanged" HorizontalAlignment="Stretch" SelectedIndex="0">
+                            <ComboBoxItem Content="Paper MC (Rendimiento y Plugins)"/>
+                            <ComboBoxItem Content="Purpur MC (Fork de Paper altamente personalizable)"/>
+                            <ComboBoxItem Content="Spigot MC (Clásico Bukkit/Spigot)"/>
+                            <ComboBoxItem Content="Vanilla (Servidor Oficial Mojang)"/>
+                            <ComboBoxItem Content="Fabric (Mods livianos)"/>
+                            <ComboBoxItem Content="Forge (Mods avanzados)"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Versión / Build Específico del Loader" FontSize="12"/>
+                        <ComboBox x:Name="WzdCmbLoaderVersion" HorizontalAlignment="Stretch" SelectedIndex="0">
+                        </ComboBox>
+                    </StackPanel>
+                    <TextBlock Text="Parte 3: Versión y Entorno de Java JDK" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="WzdTxtJavaRequirement" Text="Requisito Estricto: Java 21 (Para Minecraft 1.20.4)" FontSize="13" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="WzdTxtJavaStatus" Text="Estado: Verificando Java interno..." FontSize="12" Foreground="#888888"/>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Seleccionar Distribución / Versión de Java" FontSize="12"/>
+                        <ComboBox x:Name="WzdCmbJavaVersion" SelectionChanged="WzdCmbJavaVersion_SelectionChanged" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Versión de Java para el servidor">
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel>
 
-                                <TextBlock Text="Parte 4: RAM, Optimización JVM y Puerto" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="Parte 4: RAM, Optimización JVM y Puerto" FontSize="16" FontWeight="SemiBold"/>
 
-                                <Grid ColumnSpacing="16" RowSpacing="16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
+                        <Grid ColumnSpacing="16" RowSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Column="0" Spacing="4">
-                                        <TextBlock Text="Memoria RAM Asignada" FontSize="12"/>
-                                        <ComboBox x:Name="WzdCmbRam" SelectedIndex="1" HorizontalAlignment="Stretch">
-                                            <ComboBoxItem Content="2 GB"/>
-                                            <ComboBoxItem Content="4 GB"/>
-                                            <ComboBoxItem Content="8 GB"/>
-                                            <ComboBoxItem Content="16 GB"/>
-                                        </ComboBox>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Text="Puerto TCP del Servidor" FontSize="12"/>
-                                        <TextBox x:Name="WzdTxtPort" Text="25565"/>
-                                    </StackPanel>
-                                    <ToggleButton Grid.Column="0" Grid.Row="2" x:Name="WzdToggleAikarsFlags" Content="Optimización JVM Aikar Flags" IsChecked="True" HorizontalAlignment="Stretch"/>
-                                    <ToggleButton Grid.Column="1" Grid.Row="1" x:Name="WzdToggleEula" Content="Aceptar EULA automáticamente (eula=true)" IsChecked="True" HorizontalAlignment="Stretch"/>
-                                </Grid>
-
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="Memoria RAM Asignada" FontSize="12"/>
+                                <ComboBox x:Name="WzdCmbRam" SelectedIndex="1" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="2 GB"/>
+                                    <ComboBoxItem Content="4 GB"/>
+                                    <ComboBoxItem Content="8 GB"/>
+                                    <ComboBoxItem Content="16 GB"/>
+                                </ComboBox>
                             </StackPanel>
 
-                        </StackPanel>
-                    </Border>
-                </PivotItem>
-            </Pivot>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="Puerto TCP del Servidor" FontSize="12"/>
+                                <TextBox x:Name="WzdTxtPort" Text="25565"/>
+                            </StackPanel>
+                            <ToggleButton Grid.Column="0" Grid.Row="2" x:Name="WzdToggleAikarsFlags" Content="Optimización JVM Aikar Flags" IsChecked="True" HorizontalAlignment="Stretch"/>
+                            <ToggleButton Grid.Column="1" Grid.Row="1" x:Name="WzdToggleEula" Content="Aceptar EULA automáticamente (eula=true)" IsChecked="True" HorizontalAlignment="Stretch"/>
+                        </Grid>
+
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
             <StackPanel Spacing="6" HorizontalAlignment="Center" Margin="0,20,0,0" VerticalAlignment="Bottom">
                 <ProgressBar x:Name="WzdProgressBar" Value="0" Maximum="100" Height="8" Visibility="Collapsed"/>
                 <TextBlock x:Name="WzdTxtProgressStatus" Text="" FontSize="11" HorizontalAlignment="Center"/>

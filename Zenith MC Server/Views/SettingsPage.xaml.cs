@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Zenith.Core.Models;
@@ -62,19 +61,7 @@ namespace Zenith_MC_Server.Views
 
         private void TglAppTheme_Click(object sender, RoutedEventArgs e)
         {
-            if (_mainWindow == null || TglAppTheme == null) return;
 
-            bool isDark = TglAppTheme.IsChecked == true;
-            if (isDark)
-            {
-                TglAppTheme.Content = "🌙 Modo Oscuro";
-                _mainWindow.ApplyThemeMode("Oscuro");
-            }
-            else
-            {
-                TglAppTheme.Content = "☀️ Modo Claro";
-                _mainWindow.ApplyThemeMode("Claro");
-            }
         }
 
         private void PopulateJavaVersionsList()
@@ -210,6 +197,14 @@ namespace Zenith_MC_Server.Views
                 _mainWindow.NavigateToTag("Wizard");
                 _mainWindow.AppendConsoleLog("[Zenith Factory Reset] Reseteo de fábrica completado exitosamente.");
             }
+        }
+
+        private void TglAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {            
+            if (TglAppTheme.Text.ToString() == "Claro")
+                App.Current.RequestedTheme = ApplicationTheme.Light;
+            else
+                App.Current.RequestedTheme = ApplicationTheme.Dark;
         }
     }
 }
