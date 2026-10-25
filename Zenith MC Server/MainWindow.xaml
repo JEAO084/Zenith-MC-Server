@@ -9,10 +9,6 @@
     mc:Ignorable="d"
     Title="ZENITH MC SERVER" >
 
-    <Window.SystemBackdrop>
-        <DesktopAcrylicBackdrop/>
-    </Window.SystemBackdrop>
-
     <Grid x:Name="RootGrid" Background="Transparent" PointerPressed="RootGrid_PointerPressed">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
