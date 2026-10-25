@@ -1,6 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Zenith.Core.Models;
@@ -59,9 +61,40 @@ namespace Zenith_MC_Server.Views
             }
         }
 
-        private void TglAppTheme_Click(object sender, RoutedEventArgs e)
+        private void TglAppTheme_Click(object _sender, RoutedEventArgs _e)
         {
+            ToggleTheme();
+        }
 
+        private void TglAppTheme_SelectionChanged(object _sender, SelectionChangedEventArgs _e)
+        {
+            ToggleTheme();
+        }
+
+        private void ToggleTheme()
+        {
+            if (_mainWindow == null) return;
+
+            var themeControl = FindName("TglAppTheme") as FrameworkElement ?? TglAppTheme as FrameworkElement;
+            bool isDark = true;
+
+            if (themeControl is ToggleButton tb)
+            {
+                isDark = tb.IsChecked == true;
+                tb.Content = isDark ? "🌙 Modo Oscuro" : "☀️ Modo Claro";
+            }
+            else if (themeControl is Selector sel)
+            {
+                string text = sel.SelectedItem?.ToString() ?? "";
+                if (sel.SelectedItem is ComboBoxItem item) text = item.Content?.ToString() ?? "";
+                isDark = !text.Contains("Claro", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (themeControl is ToggleSwitch ts)
+            {
+                isDark = ts.IsOn;
+            }
+
+            _mainWindow.ApplyThemeMode(isDark ? "Oscuro" : "Claro");
         }
 
         private void PopulateJavaVersionsList()
@@ -197,14 +230,6 @@ namespace Zenith_MC_Server.Views
                 _mainWindow.NavigateToTag("Wizard");
                 _mainWindow.AppendConsoleLog("[Zenith Factory Reset] Reseteo de fábrica completado exitosamente.");
             }
-        }
-
-        private void TglAppTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {            
-            if (TglAppTheme.Text.ToString() == "Claro")
-                App.Current.RequestedTheme = ApplicationTheme.Light;
-            else
-                App.Current.RequestedTheme = ApplicationTheme.Dark;
         }
     }
 }

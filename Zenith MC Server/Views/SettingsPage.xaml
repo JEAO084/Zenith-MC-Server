@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:dev="using:DevWinUI"
     mc:Ignorable="d">
 
     <Grid Padding="24">
@@ -32,23 +31,11 @@
             <ScrollViewer x:Name="PanelSettingsGeneral" Visibility="Visible" VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="16">
                     <!-- Theme Selector Card -->
-                    <dev:SettingsCard x:Name="settingsCard2"
-                        Description="Seleccionar tema para Zenith MC Server"
-                        Header="Tema">
-                        <dev:SettingsCard.HeaderIcon>
-                            <FontIcon Glyph="&#xE706;" />
-                        </dev:SettingsCard.HeaderIcon>
-                        <ComboBox x:Name="TglAppTheme" SelectedIndex="0" SelectionChanged="TglAppTheme_SelectionChanged">
-                            <ComboBoxItem>Claro</ComboBoxItem>
-                            <ComboBoxItem>Oscuro</ComboBoxItem>
-                        </ComboBox>
-                    </dev:SettingsCard>
-
                     <Border Background="#15888888" CornerRadius="12" Padding="18" BorderBrush="#25888888" BorderThickness="1">
                         <StackPanel Spacing="12">
                             <TextBlock Text="Tema Visual de la Aplicación" FontSize="16" FontWeight="SemiBold"/>
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <ToggleButton  Content="🌙 Modo Oscuro" Click="TglAppTheme_Click" IsChecked="True" CornerRadius="8" Padding="16,8" FontWeight="SemiBold"/>
+                                <ToggleButton x:Name="TglAppTheme" Content="🌙 Modo Oscuro" Click="TglAppTheme_Click" IsChecked="True" CornerRadius="8" Padding="16,8" FontWeight="SemiBold"/>
                                 <TextBlock Text="Utiliza el efecto DesktopAcrylic nativo de WinUI 3." VerticalAlignment="Center" FontSize="12" Foreground="#888888"/>
                             </StackPanel>
                         </StackPanel>

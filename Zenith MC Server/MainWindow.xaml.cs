@@ -1,6 +1,4 @@
-using DevWinUI;
 using Microsoft.UI;
-using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -64,6 +62,9 @@ namespace Zenith_MC_Server
             UpdateStatusIndicator(false);
             UpdateNavViewVisibility();
 
+            // Default Desktop Acrylic Theme
+            this.SystemBackdrop = new DesktopAcrylicBackdrop();
+            ApplyThemeMode("Oscuro");
 
             // First-run detection: If no server profiles exist, navigate to Wizard Page automatically
             if (_serverManager.GetProfiles().Count == 0)
@@ -247,6 +248,23 @@ namespace Zenith_MC_Server
 
         public void ApplyThemeMode(string choice)
         {
+            this.SystemBackdrop = new DesktopAcrylicBackdrop();
+
+            if (choice.Contains("Claro"))
+            {
+                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Light;
+
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255));
+                if (AppWindow.TitleBar != null) AppWindow.TitleBar.ButtonForegroundColor = ColorHelper.FromArgb(255, 0, 0, 0);
+
+            }
+            else
+            {
+                if (Content is FrameworkElement rootElement) rootElement.RequestedTheme = ElementTheme.Dark;
+
+                if (RootGrid != null) RootGrid.Background = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+                if (AppWindow.TitleBar != null) AppWindow.TitleBar.ButtonForegroundColor = ColorHelper.FromArgb(255, 255, 255, 255);
+            }
         }
 
         #endregion
